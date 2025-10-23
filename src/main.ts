@@ -27,9 +27,9 @@ interface Game {
 Hooks.once("init", () => {
   console.log("PF2e Quick Rolls | Module initializing");
   globalThis.QuickRollPrompt = QuickRollPrompt;
+  registerKeybindings();
 });
 
 Hooks.once("ready", () => {
   console.log("PF2e Quick Rolls | Ready to roll!");
-  registerKeybindings();
 });
