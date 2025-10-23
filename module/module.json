@@ -30,7 +30,7 @@
   "styles": [
     "styles/main.css",
     "styles/quick-rolls.css"
-  ]
+  ],
   "manifest": "https://raw.githubusercontent.com/Kazgul1987/PF2e-Quick-Rolls/main/module/module.json",
   "download": "https://github.com/Kazgul1987/PF2e-Quick-Rolls/releases/latest/download/module.zip"
 }
