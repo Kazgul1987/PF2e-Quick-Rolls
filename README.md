@@ -50,3 +50,52 @@ The compiled JavaScript will be emitted to `module/scripts`. Copy the entire `mo
   ```
 
 During development you can symlink the `module/` directory into your Foundry data path to test live changes. When using watch mode, tsup will rebuild the bundle whenever a file inside `src/` changes.
+
+## Quick-roll prompt abbreviations
+
+The quick-roll prompt accepts concise commands to trigger common checks and damage rolls. Use the following abbreviations when entering prompt text:
+
+### Damage type aliases
+
+| Eingabe | Vollständiger Schadens-Typ |
+| --- | --- |
+| `acid`, `aci` | Acid |
+| `cold`, `col` | Cold |
+| `electricity`, `ele`, `elec` | Electricity |
+| `fire`, `fir` | Fire |
+| `force` | Force |
+| `sonic`, `son` | Sonic |
+| `poison`, `poi` | Poison |
+| `mental`, `men` | Mental |
+| `negative`, `neg` | Negative |
+| `positive`, `pos` | Positive |
+| `bludgeoning`, `blu`, `blud` | Bludgeoning |
+| `piercing`, `pie` | Piercing |
+| `slashing`, `sla` | Slashing |
+
+### Skill and save aliases
+
+| Eingabe | Fertigkeit/Wurf |
+| --- | --- |
+| `acrobatics`, `acro` | Acrobatics |
+| `arcana`, `arc` | Arcana |
+| `athletics`, `ath` | Athletics |
+| `crafting`, `cra` | Crafting |
+| `deception`, `dec` | Deception |
+| `diplomacy`, `dip` | Diplomacy |
+| `intimidation`, `int` | Intimidation |
+| `medicine`, `med` | Medicine |
+| `nature`, `nat` | Nature |
+| `occultism`, `occ` | Occultism |
+| `perception`, `perc` | Perception |
+| `performance`, `perf` | Performance |
+| `religion`, `rel` | Religion |
+| `society`, `soc` | Society |
+| `stealth`, `ste` | Stealth |
+| `survival`, `sur` | Survival |
+| `thievery`, `thi` | Thievery |
+| `fortitude`, `fort` | Fortitude Save |
+| `reflex`, `ref` | Reflex Save |
+| `will`, `wil` | Will Save |
+
+Example damage command: `2d6+4 fir` rolls fire damage. Example check command: `perc 20` creates a Perception check against DC 20.
