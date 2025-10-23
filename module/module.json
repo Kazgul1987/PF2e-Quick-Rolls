@@ -4,6 +4,7 @@
   "title": "PF2e Quick Rolls",
   "description": "Quality-of-life quick roll utilities for the Pathfinder Second Edition system.",
   "version": "0.1.0",
+  "type": "module",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
@@ -30,4 +31,6 @@
     "styles/main.css",
     "styles/quick-rolls.css"
   ]
+  "manifest": "https://raw.githubusercontent.com/Kazgul1987/PF2e-Quick-Rolls/main/module/module.json",
+  "download": "https://github.com/Kazgul1987/PF2e-Quick-Rolls/releases/latest/download/module.zip"
 }
