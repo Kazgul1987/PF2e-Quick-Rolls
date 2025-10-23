@@ -48,7 +48,15 @@ describe("parseQuickRollInput", () => {
     const result = await parseQuickRollInput("3d6+4 fir");
 
     expect(result).toBe(true);
-    expect(globalThis.game?.dice?.roll).toHaveBeenCalledWith("/r 3d6+4[fire]");
+    expect(globalThis.game?.dice?.roll).toHaveBeenCalledWith("/r (3d6+4)[fire]");
+    expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
+  });
+
+  it("rolls damage for full damage type names with wrapped formulas", async () => {
+    const result = await parseQuickRollInput("3d6+4 acid");
+
+    expect(result).toBe(true);
+    expect(globalThis.game?.dice?.roll).toHaveBeenCalledWith("/r (3d6+4)[acid]");
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
   });
 
@@ -85,11 +93,11 @@ describe("parseQuickRollInput", () => {
   it("fällt auf die Chat-Verarbeitung zurück, wenn game.dice.roll fehlt", async () => {
     globalThis.game = { dice: {} };
 
-    const result = await parseQuickRollInput("2d6 fir");
+    const result = await parseQuickRollInput("3d6+4 acid");
 
     expect(result).toBe(true);
     expect(globalThis.ui?.chat?.processMessage).toHaveBeenCalledWith(
-      "/r 2d6[fire]",
+      "(/r (3d6+4)[acid])",
       {},
     );
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
