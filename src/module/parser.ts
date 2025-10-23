@@ -154,11 +154,10 @@ export async function parseDamageCommand(input: string): Promise<boolean> {
   }
 
   const command = `/r (${formula})[${damageType}]`;
-  const chatCommand = `(${command})`;
   if (!game?.dice?.roll) {
     try {
       if (ui?.chat?.processMessage) {
-        await ui.chat.processMessage(chatCommand, {});
+        await ui.chat.processMessage(command, {});
         return true;
       }
     } catch (error) {
