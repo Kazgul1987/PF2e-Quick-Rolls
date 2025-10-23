@@ -4,6 +4,8 @@
  * This file is bundled into {@link module/scripts/main.js} via tsup.
  */
 
+import { registerKeybindings } from "./module/keybindings";
+
 declare const Hooks: {
   once(event: string, callback: () => void): void;
 };
@@ -22,4 +24,5 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
   console.log("PF2e Quick Rolls | Ready to roll!");
+  registerKeybindings();
 });
