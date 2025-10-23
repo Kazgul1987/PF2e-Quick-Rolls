@@ -12,6 +12,12 @@ declare const ui: {
   notifications?: {
     warn?: (message: string) => void;
   };
+  chat?: {
+    processMessage?: (
+      content: string,
+      options: Record<string, unknown>,
+    ) => Promise<unknown> | unknown;
+  };
 };
 
 const DAMAGE_TYPE_ALIASES: Record<string, string> = {
@@ -142,13 +148,22 @@ export async function parseDamageCommand(input: string): Promise<boolean> {
     return false;
   }
 
+  const command = `/r ${formula}[${damageType}]`;
   if (!game?.dice?.roll) {
+    try {
+      if (ui?.chat?.processMessage) {
+        await ui.chat.processMessage(command, {});
+        return true;
+      }
+    } catch (error) {
+      console.error("PF2e Quick Rolls | Chat-Verarbeitung fehlgeschlagen:", error);
+    }
+
     console.warn("PF2e Quick Rolls | game.dice.roll ist nicht verfügbar.");
     notifyUser("PF2e Quick Rolls: Würfelmechanik nicht verfügbar.");
     return false;
   }
 
-  const command = `/r ${formula}[${damageType}]`;
   await game.dice.roll(command);
   return true;
 }

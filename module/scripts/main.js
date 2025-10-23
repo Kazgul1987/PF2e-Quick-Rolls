@@ -109,12 +109,20 @@ async function parseDamageCommand(input) {
     notifyUser("PF2e Quick Rolls: Keine Schadensformel gefunden.");
     return false;
   }
+  const command = `/r ${formula}[${damageType}]`;
   if (!game?.dice?.roll) {
+    try {
+      if (ui?.chat?.processMessage) {
+        await ui.chat.processMessage(command, {});
+        return true;
+      }
+    } catch (error) {
+      console.error("PF2e Quick Rolls | Chat-Verarbeitung fehlgeschlagen:", error);
+    }
     console.warn("PF2e Quick Rolls | game.dice.roll ist nicht verf\xFCgbar.");
     notifyUser("PF2e Quick Rolls: W\xFCrfelmechanik nicht verf\xFCgbar.");
     return false;
   }
-  const command = `/r ${formula}[${damageType}]`;
   await game.dice.roll(command);
   return true;
 }

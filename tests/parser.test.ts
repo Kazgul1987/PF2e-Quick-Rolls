@@ -7,7 +7,17 @@ declare global {
   // eslint-disable-next-line no-var
   var ChatMessage: { create?: (data: { content: string }) => Promise<unknown> | unknown } | undefined;
   // eslint-disable-next-line no-var
-  var ui: { notifications?: { warn?: (message: string) => void } } | undefined;
+  var ui:
+    | {
+        notifications?: { warn?: (message: string) => void };
+        chat?: {
+          processMessage?: (
+            content: string,
+            options: Record<string, unknown>,
+          ) => Promise<unknown> | unknown;
+        };
+      }
+    | undefined;
 }
 
 describe("parseQuickRollInput", () => {
@@ -27,6 +37,9 @@ describe("parseQuickRollInput", () => {
     globalThis.ui = {
       notifications: {
         warn: vi.fn(),
+      },
+      chat: {
+        processMessage: vi.fn().mockResolvedValue(undefined),
       },
     };
   });
@@ -66,6 +79,36 @@ describe("parseQuickRollInput", () => {
     expect(globalThis.ChatMessage?.create).not.toHaveBeenCalled();
     expect(globalThis.ui?.notifications?.warn).toHaveBeenCalledWith(
       "PF2e Quick Rolls: Check nicht erkannt. Verwende z.B. 'perc 20'.",
+    );
+  });
+
+  it("fällt auf die Chat-Verarbeitung zurück, wenn game.dice.roll fehlt", async () => {
+    globalThis.game = { dice: {} };
+
+    const result = await parseQuickRollInput("2d6 fir");
+
+    expect(result).toBe(true);
+    expect(globalThis.ui?.chat?.processMessage).toHaveBeenCalledWith(
+      "/r 2d6[fire]",
+      {},
+    );
+    expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
+  });
+
+  it("warnt, wenn weder game.dice.roll noch ui.chat.processMessage verfügbar sind", async () => {
+    globalThis.game = { dice: {} };
+    globalThis.ui = {
+      notifications: {
+        warn: vi.fn(),
+      },
+      chat: {},
+    };
+
+    const result = await parseQuickRollInput("2d6 fir");
+
+    expect(result).toBe(false);
+    expect(globalThis.ui?.notifications?.warn).toHaveBeenCalledWith(
+      "PF2e Quick Rolls: Würfelmechanik nicht verfügbar.",
     );
   });
 });
