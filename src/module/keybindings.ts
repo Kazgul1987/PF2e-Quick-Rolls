@@ -75,12 +75,6 @@ export function registerKeybindings(): void {
   registerFn.call(game.keybindings, namespace, bindingName, {
     name: "PF2e Quick Rolls | Open Quick Roll Prompt",
     hint: "Open the PF2e Quick Roll Prompt.",
-    editable: [
-      {
-        key: "Space",
-        modifiers: ["CONTROL"],
-      },
-    ],
     onDown: () => {
       openQuickRollPrompt();
       return true;

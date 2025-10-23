@@ -34,6 +34,10 @@ src/                 # TypeScript source files
 
 The compiled JavaScript will be emitted to `module/scripts`. Copy the entire `module/` directory into your Foundry VTT `Data/modules` folder (or symlink it during development). The module will appear in Foundry under the name **PF2e Quick Rolls**.
 
+### Keybinding configuration
+
+The module registers an action that opens the quick-roll prompt, but it is unbound by default. After enabling the module in Foundry, open **Configure Controls → PF2e Quick Rolls** and assign your preferred shortcut to **Open Quick Roll Prompt** before attempting to trigger it from the keyboard.
+
 ## Development
 
 - **One-off build:**
