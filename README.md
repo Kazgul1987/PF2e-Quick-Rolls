@@ -44,5 +44,9 @@ The compiled JavaScript will be emitted to `module/scripts`. Copy the entire `mo
   ```bash
   npm run dev
   ```
+- **Run tests:**
+  ```bash
+  npm test
+  ```
 
 During development you can symlink the `module/` directory into your Foundry data path to test live changes. When using watch mode, tsup will rebuild the bundle whenever a file inside `src/` changes.
