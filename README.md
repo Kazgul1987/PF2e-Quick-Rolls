@@ -102,4 +102,4 @@ The quick-roll prompt accepts concise commands to trigger common checks and dama
 | `reflex`, `ref` | Reflex Save |
 | `will`, `wil` | Will Save |
 
-Example damage command: `2d6+4 fir` rolls fire damage. Example check command: `perc 20` creates a Perception check against DC 20.
+Example damage command: `2d6+4 fir` rolls fire damage. For checks you can either request a standard DC by level—`perc 11` or `perc lvl 11` create a Perception check against the level 11 standard DC of 28—or override the DC manually with `perc dc 20`.

@@ -60,14 +60,44 @@ describe("parseQuickRollInput", () => {
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
   });
 
-  it("creates a check chat card for known skill aliases", async () => {
-    const result = await parseQuickRollInput("perc 19");
+  it("creates a check chat card for explicit DC overrides", async () => {
+    const result = await parseQuickRollInput("perc dc 19");
 
     expect(result).toBe(true);
     expect(globalThis.ChatMessage?.create).toHaveBeenCalledWith({
       content: "@Check[perception|dc:19]",
     });
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
+  });
+
+  it("derives check DCs from levels when no qualifier is provided", async () => {
+    const result = await parseQuickRollInput("perc 11");
+
+    expect(result).toBe(true);
+    expect(globalThis.ChatMessage?.create).toHaveBeenCalledWith({
+      content: "@Check[perception|dc:28]",
+    });
+    expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
+  });
+
+  it("supports level qualifiers for check DCs", async () => {
+    const result = await parseQuickRollInput("fort lvl 3");
+
+    expect(result).toBe(true);
+    expect(globalThis.ChatMessage?.create).toHaveBeenCalledWith({
+      content: "@Check[fortitude|dc:18]",
+    });
+    expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
+  });
+
+  it("warns when a requested level has no standard DC", async () => {
+    const result = await parseQuickRollInput("perc level 30");
+
+    expect(result).toBe(false);
+    expect(globalThis.ChatMessage?.create).not.toHaveBeenCalled();
+    expect(globalThis.ui?.notifications?.warn).toHaveBeenCalledWith(
+      "PF2e Quick Rolls: Standard-DCs sind nur für Stufen 0–25 verfügbar.",
+    );
   });
 
   it("warns when the damage type alias is unknown", async () => {
