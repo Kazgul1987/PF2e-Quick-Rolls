@@ -138,7 +138,7 @@ async function parseDamageCommand(input) {
     return false;
   }
   const command = `/r (${formula})[${damageType}]`;
-  const chatCommand = `(${command})`;
+  const chatCommand = `${command}`;
   if (!game?.dice?.roll) {
     try {
       if (ui?.chat?.processMessage) {
