@@ -93,6 +93,11 @@ const SKILL_AND_SAVE_ALIASES: Record<string, string> = {
   wil: "will",
 };
 
+const STANDARD_DC_BY_LEVEL: number[] = [
+  14, 15, 16, 18, 19, 20, 22, 23, 24, 26, 27, 28, 30,
+  31, 32, 34, 35, 36, 38, 39, 40, 42, 44, 46, 48, 50,
+];
+
 /**
  * Central quick-roll parser responsible for interpreting user input.
  *
@@ -170,19 +175,56 @@ export async function parseDamageCommand(input: string): Promise<boolean> {
 }
 
 export async function parseCheckCommand(input: string): Promise<boolean> {
-  const match = input.match(/^([a-zA-Z]+)\s+(\d+)$/);
+  const trimmed = input.trim();
+  const match = trimmed.match(/^([a-zA-Z]+)\s+(.+)$/);
   if (!match) {
     notifyUser("PF2e Quick Rolls: Check nicht erkannt. Verwende z.B. 'perc 20'.");
     return false;
   }
 
   const skillAlias = match[1].toLowerCase();
-  const dc = match[2];
+  const remainder = match[2].trim();
   const skill = SKILL_AND_SAVE_ALIASES[skillAlias];
 
   if (!skill) {
     notifyUser(`PF2e Quick Rolls: Unbekannter Skill/Safe '${skillAlias}'.`);
     return false;
+  }
+
+  const qualifierMatch = remainder.match(/^(dc|lvl|level)\s*[:=]?\s*(\d+)$/i);
+  const compactQualifierMatch = remainder.match(/^(dc|lvl|level)(\d+)$/i);
+
+  let qualifier: "dc" | "level" = "level";
+  let valueText: string | undefined;
+
+  if (qualifierMatch || compactQualifierMatch) {
+    const [, qualifierToken, valueToken] = qualifierMatch ?? compactQualifierMatch!;
+    qualifier = qualifierToken.toLowerCase() === "dc" ? "dc" : "level";
+    valueText = valueToken;
+  } else {
+    const bareMatch = remainder.match(/^(\d+)$/);
+    if (!bareMatch) {
+      notifyUser("PF2e Quick Rolls: Check nicht erkannt. Verwende z.B. 'perc 20'.");
+      return false;
+    }
+    valueText = bareMatch[1];
+  }
+
+  const value = Number.parseInt(valueText ?? "", 10);
+  if (Number.isNaN(value)) {
+    notifyUser("PF2e Quick Rolls: Check nicht erkannt. Verwende z.B. 'perc 20'.");
+    return false;
+  }
+
+  let dc: number;
+  if (qualifier === "dc") {
+    dc = value;
+  } else {
+    if (value < 0 || value >= STANDARD_DC_BY_LEVEL.length) {
+      notifyUser("PF2e Quick Rolls: Standard-DCs sind nur für Stufen 0–25 verfügbar.");
+      return false;
+    }
+    dc = STANDARD_DC_BY_LEVEL[value];
   }
 
   if (!ChatMessage?.create) {
