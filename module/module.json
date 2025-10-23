@@ -27,6 +27,7 @@
   "languages": [],
   "packs": [],
   "styles": [
-    "styles/main.css"
+    "styles/main.css",
+    "styles/quick-rolls.css"
   ]
 }
