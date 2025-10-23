@@ -221,21 +221,38 @@ var QuickRollPrompt2 = class extends Application {
 // src/module/keybindings.ts
 function openQuickRollPrompt() {
   if (typeof QuickRollPrompt === "function") {
+    console.debug(
+      "PF2e Quick Rolls | openQuickRollPrompt invoked; instantiating QuickRollPrompt"
+    );
     new QuickRollPrompt().render(true);
     return;
   }
+  console.debug(
+    "PF2e Quick Rolls | openQuickRollPrompt invoked; QuickRollPrompt unavailable, issuing warning"
+  );
   console.warn(
     "PF2e Quick Rolls | QuickRollPrompt constructor is unavailable; cannot open prompt via keybinding."
   );
 }
 function registerKeybindings() {
-  if (!game.keybindings?.register) {
+  console.debug("PF2e Quick Rolls | registerKeybindings() invoked");
+  const namespace = "pf2e-quick-rolls";
+  const bindingName = "openQuickRollPrompt";
+  const registerFn = game.keybindings?.register;
+  const hasRegister = typeof registerFn === "function";
+  console.debug(
+    `PF2e Quick Rolls | game.keybindings.register is ${hasRegister ? "available" : "unavailable"}`
+  );
+  if (!hasRegister) {
     console.warn(
       "PF2e Quick Rolls | game.keybindings.register is unavailable; skipping keybinding registration."
     );
     return;
   }
-  game.keybindings.register("pf2e-quick-rolls", "openQuickRollPrompt", {
+  console.debug(
+    `PF2e Quick Rolls | Registering keybinding ${namespace}.${bindingName}`
+  );
+  registerFn.call(game.keybindings, namespace, bindingName, {
     name: "PF2e Quick Rolls | Open Quick Roll Prompt",
     hint: "Open the PF2e Quick Roll Prompt.",
     editable: [
@@ -249,16 +266,21 @@ function registerKeybindings() {
       return true;
     }
   });
+  console.debug(
+    `PF2e Quick Rolls | Completed registration for keybinding ${namespace}.${bindingName}`
+  );
 }
 
 // src/main.ts
 Hooks.once("init", () => {
   console.log("PF2e Quick Rolls | Module initializing");
   globalThis.QuickRollPrompt = QuickRollPrompt2;
+  console.debug("PF2e Quick Rolls | Starting keybinding registration from main.ts");
+  registerKeybindings();
+  console.debug("PF2e Quick Rolls | Finished keybinding registration from main.ts");
 });
 Hooks.once("ready", () => {
   console.log("PF2e Quick Rolls | Ready to roll!");
-  registerKeybindings();
 });
 //# sourceMappingURL=out.js.map
 //# sourceMappingURL=main.js.map
