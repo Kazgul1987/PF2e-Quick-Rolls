@@ -1,0 +1,19 @@
+.pf2e-quick-rolls.quick-roll-prompt {
+  padding: 1rem;
+}
+
+.quick-roll-prompt__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quick-roll-prompt__label {
+  font-weight: 600;
+}
+
+.quick-roll-prompt__input {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
