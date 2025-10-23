@@ -109,11 +109,12 @@ async function parseDamageCommand(input) {
     notifyUser("PF2e Quick Rolls: Keine Schadensformel gefunden.");
     return false;
   }
-  const command = `/r ${formula}[${damageType}]`;
+  const command = `/r (${formula})[${damageType}]`;
+  const chatCommand = `(${command})`;
   if (!game?.dice?.roll) {
     try {
       if (ui?.chat?.processMessage) {
-        await ui.chat.processMessage(command, {});
+        await ui.chat.processMessage(chatCommand, {});
         return true;
       }
     } catch (error) {
