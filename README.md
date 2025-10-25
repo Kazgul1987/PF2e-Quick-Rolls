@@ -102,4 +102,22 @@ The quick-roll prompt accepts concise commands to trigger common checks and dama
 | `reflex`, `ref` | Reflex Save |
 | `will`, `wil` | Will Save |
 
+### Action aliases
+
+The prompt can also invoke PF2e system macros for common actions without opening their full sheets. Use one of the following keywords to trigger a macro directly:
+
+| Eingabe | Aktion |
+| --- | --- |
+| `trip`, `tripup` | Trip |
+| `disarm` | Disarm |
+| `shove`, `push` | Shove |
+| `grapple`, `grab` | Grapple |
+| `escape` | Escape |
+| `demoralize`, `demoralise` | Demoralize |
+| `feint` | Feint |
+| `aid` | Aid |
+| `seek` | Seek |
+| `recall`, `recallknowledge` | Recall Knowledge |
+| `tumble`, `tumble through` | Tumble Through |
+
 Example damage command: `2d6+4 fir` rolls fire damage. For checks you can either request a standard DC by level—`perc 11` or `perc lvl 11` create a Perception check against the level 11 standard DC of 28—or override the DC manually with `perc dc 20`.
