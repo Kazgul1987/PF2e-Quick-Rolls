@@ -3,7 +3,22 @@ import { parseQuickRollInput } from "../src/module/parser";
 
 declare global {
   // eslint-disable-next-line no-var
-  var game: { dice?: { roll?: (formula: string) => Promise<unknown> | unknown } } | undefined;
+  var game:
+    | {
+        dice?: { roll?: (formula: string) => Promise<unknown> | unknown };
+        pf2e?: {
+          actions?: {
+            get?: (
+              slug: string,
+            ) => { use?: (options?: Record<string, unknown>) => unknown } | undefined;
+            [slug: string]:
+              | ((options?: Record<string, unknown>) => unknown)
+              | { use?: (options?: Record<string, unknown>) => unknown }
+              | undefined;
+          };
+        };
+      }
+    | undefined;
   // eslint-disable-next-line no-var
   var ChatMessage: { create?: (data: { content: string }) => Promise<unknown> | unknown } | undefined;
   // eslint-disable-next-line no-var
@@ -27,6 +42,11 @@ describe("parseQuickRollInput", () => {
     globalThis.game = {
       dice: {
         roll: vi.fn().mockResolvedValue(undefined),
+      },
+      pf2e: {
+        actions: {
+          get: vi.fn().mockReturnValue(undefined),
+        },
       },
     };
 
@@ -127,7 +147,7 @@ describe("parseQuickRollInput", () => {
 
     expect(result).toBe(true);
     expect(globalThis.ui?.chat?.processMessage).toHaveBeenCalledWith(
-      "(/r (3d6+4)[acid])",
+      "/r (3d6+4)[acid]",
       {},
     );
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
@@ -147,6 +167,55 @@ describe("parseQuickRollInput", () => {
     expect(result).toBe(false);
     expect(globalThis.ui?.notifications?.warn).toHaveBeenCalledWith(
       "PF2e Quick Rolls: Würfelmechanik nicht verfügbar.",
+    );
+  });
+
+  it("invokes PF2e action macros when an action alias is provided", async () => {
+    const useMock = vi.fn().mockResolvedValue(undefined);
+    const getMock = vi.fn().mockReturnValue({ use: useMock });
+
+    globalThis.game = {
+      dice: {
+        roll: vi.fn().mockResolvedValue(undefined),
+      },
+      pf2e: {
+        actions: {
+          get: getMock,
+        },
+      },
+    };
+
+    const result = await parseQuickRollInput("trip");
+
+    expect(result).toBe(true);
+    expect(getMock).toHaveBeenCalledWith("trip");
+    expect(useMock).toHaveBeenCalledWith({
+      event: undefined,
+      actors: { token: true, selected: true },
+    });
+    expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
+  });
+
+  it("warns when no matching action macro can be found", async () => {
+    const getMock = vi.fn().mockReturnValue(undefined);
+
+    globalThis.game = {
+      dice: {
+        roll: vi.fn().mockResolvedValue(undefined),
+      },
+      pf2e: {
+        actions: {
+          get: getMock,
+        },
+      },
+    };
+
+    const result = await parseQuickRollInput("tumble");
+
+    expect(result).toBe(false);
+    expect(getMock).toHaveBeenCalledWith("tumbleThrough");
+    expect(globalThis.ui?.notifications?.warn).toHaveBeenCalledWith(
+      "PF2e Quick Rolls: Aktion 'tumbleThrough' nicht verfügbar.",
     );
   });
 });

@@ -1,6 +1,30 @@
+type ActionUseOptions = {
+  event?: unknown;
+  actors?: {
+    token?: boolean;
+    selected?: boolean;
+    party?: boolean;
+  };
+};
+
+type PF2eActionMacro = {
+  use?: (options?: ActionUseOptions) => Promise<unknown> | unknown;
+};
+
+type PF2eLegacyAction = (
+  options?: ActionUseOptions,
+) => Promise<unknown> | unknown;
+
+type PF2eActions = {
+  get?: (slug: string) => PF2eActionMacro | undefined;
+} & Record<string, PF2eLegacyAction | PF2eActionMacro | undefined>;
+
 declare const game: {
   dice?: {
     roll?: (formula: string) => Promise<unknown> | unknown;
+  };
+  pf2e?: {
+    actions?: PF2eActions;
   };
 };
 
@@ -93,6 +117,29 @@ const SKILL_AND_SAVE_ALIASES: Record<string, string> = {
   wil: "will",
 };
 
+const ACTION_ALIASES: Record<string, string> = {
+  trip: "trip",
+  disarm: "disarm",
+  shove: "shove",
+  push: "shove",
+  grapple: "grapple",
+  grab: "grapple",
+  escape: "escape",
+  demoralize: "demoralize",
+  demoralise: "demoralize",
+  feint: "feint",
+  aid: "aid",
+  seek: "seek",
+  tripup: "trip",
+  tumble: "tumbleThrough",
+  "tumblethrough": "tumbleThrough",
+  "tumble-through": "tumbleThrough",
+  "tumblethru": "tumbleThrough",
+  "recallknowledge": "recallKnowledge",
+  "recall-knowledge": "recallKnowledge",
+  recall: "recallKnowledge",
+};
+
 const STANDARD_DC_BY_LEVEL: number[] = [
   14, 15, 16, 18, 19, 20, 22, 23, 24, 26, 27, 28, 30,
   31, 32, 34, 35, 36, 38, 39, 40, 42, 44, 46, 48, 50,
@@ -117,6 +164,12 @@ export async function parseQuickRollInput(rawInput: string): Promise<boolean> {
   try {
     if (/^[0-9]/.test(trimmedInput)) {
       return await parseDamageCommand(trimmedInput);
+    }
+
+    const normalizedAliasKey = trimmedInput.toLowerCase().replace(/\s+/g, "");
+    const actionSlug = ACTION_ALIASES[normalizedAliasKey];
+    if (actionSlug) {
+      return await invokeActionMacro(actionSlug);
     }
 
     if (/^[a-zA-Z]/.test(trimmedInput)) {
@@ -235,6 +288,37 @@ export async function parseCheckCommand(input: string): Promise<boolean> {
   const content = `@Check[${skill}|dc:${dc}]`;
   await ChatMessage.create({ content });
   return true;
+}
+
+async function invokeActionMacro(slug: string): Promise<boolean> {
+  const actions = game?.pf2e?.actions;
+  const defaultOptions: ActionUseOptions = {
+    event: undefined,
+    actors: {
+      token: true,
+      selected: true,
+    },
+  };
+
+  const mappedAction = actions?.get?.(slug);
+  if (mappedAction?.use) {
+    await mappedAction.use(defaultOptions);
+    return true;
+  }
+
+  const legacyEntry = actions?.[slug];
+  if (typeof legacyEntry === "function") {
+    await legacyEntry(defaultOptions);
+    return true;
+  }
+
+  if (legacyEntry && typeof (legacyEntry as PF2eActionMacro).use === "function") {
+    await (legacyEntry as PF2eActionMacro).use(defaultOptions);
+    return true;
+  }
+
+  notifyUser(`PF2e Quick Rolls: Aktion '${slug}' nicht verfügbar.`);
+  return false;
 }
 
 function notifyUser(message: string): void {
