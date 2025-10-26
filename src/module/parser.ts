@@ -1,10 +1,5 @@
 type ActionUseOptions = {
   event?: unknown;
-  actors?: {
-    token?: boolean;
-    selected?: boolean;
-    party?: boolean;
-  };
 };
 
 type PF2eActionMacro = {
@@ -292,13 +287,7 @@ export async function parseCheckCommand(input: string): Promise<boolean> {
 
 async function invokeActionMacro(slug: string): Promise<boolean> {
   const actions = game?.pf2e?.actions;
-  const defaultOptions: ActionUseOptions = {
-    event: undefined,
-    actors: {
-      token: true,
-      selected: true,
-    },
-  };
+  const defaultOptions: ActionUseOptions = {};
 
   const mappedAction = actions?.get?.(slug);
   if (mappedAction?.use) {
