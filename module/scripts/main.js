@@ -70,6 +70,28 @@ var SKILL_AND_SAVE_ALIASES = {
   will: "will",
   wil: "will"
 };
+var ACTION_ALIASES = {
+  trip: "trip",
+  disarm: "disarm",
+  shove: "shove",
+  push: "shove",
+  grapple: "grapple",
+  grab: "grapple",
+  escape: "escape",
+  demoralize: "demoralize",
+  demoralise: "demoralize",
+  feint: "feint",
+  aid: "aid",
+  seek: "seek",
+  tripup: "trip",
+  tumble: "tumbleThrough",
+  "tumblethrough": "tumbleThrough",
+  "tumble-through": "tumbleThrough",
+  "tumblethru": "tumbleThrough",
+  "recallknowledge": "recallKnowledge",
+  "recall-knowledge": "recallKnowledge",
+  recall: "recallKnowledge"
+};
 var STANDARD_DC_BY_LEVEL = [
   14,
   15,
@@ -109,6 +131,11 @@ async function parseQuickRollInput(rawInput) {
     if (/^[0-9]/.test(trimmedInput)) {
       return await parseDamageCommand(trimmedInput);
     }
+    const normalizedAliasKey = trimmedInput.toLowerCase().replace(/\s+/g, "");
+    const actionSlug = ACTION_ALIASES[normalizedAliasKey];
+    if (actionSlug) {
+      return await invokeActionMacro(actionSlug);
+    }
     if (/^[a-zA-Z]/.test(trimmedInput)) {
       return await parseCheckCommand(trimmedInput);
     }
@@ -138,11 +165,10 @@ async function parseDamageCommand(input) {
     return false;
   }
   const command = `/r (${formula})[${damageType}]`;
-  const chatCommand = `${command}`;
   if (!game?.dice?.roll) {
     try {
       if (ui?.chat?.processMessage) {
-        await ui.chat.processMessage(chatCommand, {});
+        await ui.chat.processMessage(command, {});
         return true;
       }
     } catch (error) {
@@ -208,6 +234,32 @@ async function parseCheckCommand(input) {
   const content = `@Check[${skill}|dc:${dc}]`;
   await ChatMessage.create({ content });
   return true;
+}
+async function invokeActionMacro(slug) {
+  const actions = game?.pf2e?.actions;
+  const defaultOptions = {
+    event: void 0,
+    actors: {
+      token: true,
+      selected: true
+    }
+  };
+  const mappedAction = actions?.get?.(slug);
+  if (mappedAction?.use) {
+    await mappedAction.use(defaultOptions);
+    return true;
+  }
+  const legacyEntry = actions?.[slug];
+  if (typeof legacyEntry === "function") {
+    await legacyEntry(defaultOptions);
+    return true;
+  }
+  if (legacyEntry && typeof legacyEntry.use === "function") {
+    await legacyEntry.use(defaultOptions);
+    return true;
+  }
+  notifyUser(`PF2e Quick Rolls: Aktion '${slug}' nicht verf\xFCgbar.`);
+  return false;
 }
 function notifyUser(message) {
   if (ui?.notifications?.warn) {
