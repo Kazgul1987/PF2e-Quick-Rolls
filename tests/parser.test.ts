@@ -189,10 +189,7 @@ describe("parseQuickRollInput", () => {
 
     expect(result).toBe(true);
     expect(getMock).toHaveBeenCalledWith("trip");
-    expect(useMock).toHaveBeenCalledWith({
-      event: undefined,
-      actors: { token: true, selected: true },
-    });
+    expect(useMock).toHaveBeenCalledWith({});
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
   });
 
