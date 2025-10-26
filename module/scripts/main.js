@@ -237,25 +237,18 @@ async function parseCheckCommand(input) {
 }
 async function invokeActionMacro(slug) {
   const actions = game?.pf2e?.actions;
-  const defaultOptions = {
-    event: void 0,
-    actors: {
-      token: true,
-      selected: true
-    }
-  };
   const mappedAction = actions?.get?.(slug);
   if (mappedAction?.use) {
-    await mappedAction.use(defaultOptions);
+    await mappedAction.use();
     return true;
   }
   const legacyEntry = actions?.[slug];
   if (typeof legacyEntry === "function") {
-    await legacyEntry(defaultOptions);
+    await legacyEntry();
     return true;
   }
   if (legacyEntry && typeof legacyEntry.use === "function") {
-    await legacyEntry.use(defaultOptions);
+    await legacyEntry.use();
     return true;
   }
   notifyUser(`PF2e Quick Rolls: Aktion '${slug}' nicht verf\xFCgbar.`);

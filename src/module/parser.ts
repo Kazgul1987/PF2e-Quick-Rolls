@@ -287,22 +287,21 @@ export async function parseCheckCommand(input: string): Promise<boolean> {
 
 async function invokeActionMacro(slug: string): Promise<boolean> {
   const actions = game?.pf2e?.actions;
-  const defaultOptions: ActionUseOptions = {};
 
   const mappedAction = actions?.get?.(slug);
   if (mappedAction?.use) {
-    await mappedAction.use(defaultOptions);
+    await mappedAction.use();
     return true;
   }
 
   const legacyEntry = actions?.[slug];
   if (typeof legacyEntry === "function") {
-    await legacyEntry(defaultOptions);
+    await legacyEntry();
     return true;
   }
 
   if (legacyEntry && typeof (legacyEntry as PF2eActionMacro).use === "function") {
-    await (legacyEntry as PF2eActionMacro).use(defaultOptions);
+    await (legacyEntry as PF2eActionMacro).use();
     return true;
   }
 
