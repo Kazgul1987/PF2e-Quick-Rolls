@@ -369,6 +369,7 @@ function registerKeybindings() {
   registerFn.call(game.keybindings, namespace, bindingName, {
     name: "PF2e Quick Rolls | Open Quick Roll Prompt",
     hint: "Open the PF2e Quick Roll Prompt.",
+    restricted: false,
     onDown: () => {
       openQuickRollPrompt();
       return true;
