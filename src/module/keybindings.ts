@@ -16,6 +16,7 @@ type KeybindingRegistration = {
   onDown?: (context: unknown) => boolean | void;
   onUp?: (context: unknown) => boolean | void;
   repeat?: boolean;
+  restricted?: boolean;
 };
 
 type KeybindingsManager = {
@@ -75,6 +76,7 @@ export function registerKeybindings(): void {
   registerFn.call(game.keybindings, namespace, bindingName, {
     name: "PF2e Quick Rolls | Open Quick Roll Prompt",
     hint: "Open the PF2e Quick Roll Prompt.",
+    restricted: false,
     onDown: () => {
       openQuickRollPrompt();
       return true;
