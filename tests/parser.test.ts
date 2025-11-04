@@ -72,6 +72,22 @@ describe("parseQuickRollInput", () => {
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
   });
 
+  it("rolls damage for vitality damage type aliases", async () => {
+    const result = await parseQuickRollInput("2d6 vit");
+
+    expect(result).toBe(true);
+    expect(globalThis.game?.dice?.roll).toHaveBeenCalledWith("/r (2d6)[vitality]");
+    expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
+  });
+
+  it("rolls damage for void damage type aliases", async () => {
+    const result = await parseQuickRollInput("1d8 void");
+
+    expect(result).toBe(true);
+    expect(globalThis.game?.dice?.roll).toHaveBeenCalledWith("/r (1d8)[void]");
+    expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
+  });
+
   it("rolls damage for full damage type names with wrapped formulas", async () => {
     const result = await parseQuickRollInput("3d6+4 acid");
 
@@ -189,7 +205,7 @@ describe("parseQuickRollInput", () => {
 
     expect(result).toBe(true);
     expect(getMock).toHaveBeenCalledWith("trip");
-    expect(useMock).toHaveBeenCalledWith({});
+    expect(useMock).toHaveBeenCalledWith();
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
   });
 

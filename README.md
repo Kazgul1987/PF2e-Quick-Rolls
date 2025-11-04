@@ -73,6 +73,8 @@ The quick-roll prompt accepts concise commands to trigger common checks and dama
 | `mental`, `men` | Mental |
 | `negative`, `neg` | Negative |
 | `positive`, `pos` | Positive |
+| `vitality`, `vit` | Vitality |
+| `void`, `voi` | Void |
 | `bludgeoning`, `blu`, `blud` | Bludgeoning |
 | `piercing`, `pie` | Piercing |
 | `slashing`, `sla` | Slashing |
