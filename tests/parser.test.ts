@@ -33,6 +33,28 @@ declare global {
         };
       }
     | undefined;
+  // eslint-disable-next-line no-var
+  var canvas:
+    | {
+        tokens?: {
+          controlled?: Array<{
+            actor?: {
+              increaseCondition?: (slug: string, options?: Record<string, unknown>) => unknown;
+              toggleCondition?: (slug: string, options?: Record<string, unknown>) => unknown;
+              addCondition?: (slug: string, options?: Record<string, unknown>) => unknown;
+            };
+          }>;
+        };
+      }
+    | undefined;
+  // eslint-disable-next-line no-var
+  var CONFIG:
+    | {
+        PF2E?: {
+          conditionTypes?: Record<string, unknown>;
+        };
+      }
+    | undefined;
 }
 
 describe("parseQuickRollInput", () => {
@@ -62,6 +84,61 @@ describe("parseQuickRollInput", () => {
         processMessage: vi.fn().mockResolvedValue(undefined),
       },
     };
+
+    globalThis.canvas = {
+      tokens: {
+        controlled: [],
+      },
+    };
+
+    globalThis.CONFIG = {
+      PF2E: {
+        conditionTypes: {
+          clumsy: {},
+          prone: {},
+          stunned: {},
+        },
+      },
+    };
+  });
+
+  it("applies a condition when slash command is used", async () => {
+    const increaseCondition = vi.fn().mockResolvedValue(undefined);
+    globalThis.canvas = {
+      tokens: {
+        controlled: [{ actor: { increaseCondition } }],
+      },
+    };
+
+    const result = await parseQuickRollInput("/prone");
+
+    expect(result).toBe(true);
+    expect(increaseCondition).toHaveBeenCalledWith("prone", undefined);
+    expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
+  });
+
+  it("supports three-letter condition aliases with values", async () => {
+    const increaseCondition = vi.fn().mockResolvedValue(undefined);
+    globalThis.canvas = {
+      tokens: {
+        controlled: [{ actor: { increaseCondition } }],
+      },
+    };
+
+    const result = await parseQuickRollInput("/clu 1");
+
+    expect(result).toBe(true);
+    expect(increaseCondition).toHaveBeenCalledWith("clumsy", { value: 1 });
+    expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
+  });
+
+  it("warns when no token is selected for condition commands", async () => {
+    const result = await parseQuickRollInput("/prone");
+
+    expect(result).toBe(false);
+    expect(globalThis.ui?.notifications?.warn).toHaveBeenCalledWith(
+      "PF2e Quick Rolls: Bitte wähle einen Token aus, um eine Condition zu setzen.",
+    );
   });
 
   it("rolls damage for shorthand damage type aliases", async () => {
