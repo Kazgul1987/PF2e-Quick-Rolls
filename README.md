@@ -123,3 +123,13 @@ The prompt can also invoke PF2e system macros for common actions without opening
 | `tumble`, `tumble through` | Tumble Through |
 
 Example damage command: `2d6+4 fir` rolls fire damage. For checks you can either request a standard DC by level—`perc 11` or `perc lvl 11` create a Perception check against the level 11 standard DC of 28—or override the DC manually with `perc dc 20`.
+
+### Condition slash commands
+
+Wenn der Prompt mit `/` beginnt, wird ein Condition-Befehl für den aktuell ausgewählten Token erwartet.
+
+- `/prone` setzt die Condition **prone**.
+- `/clumsy 1` setzt **clumsy** auf Wert `1`.
+- Die ersten drei Buchstaben reichen ebenfalls: `/clu 1`.
+
+Hinweis: Es muss mindestens ein Token ausgewählt sein.

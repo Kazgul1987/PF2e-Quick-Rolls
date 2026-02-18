@@ -124,6 +124,43 @@ var STANDARD_DC_BY_LEVEL = [
   48,
   50
 ];
+var FALLBACK_CONDITION_SLUGS = [
+  "blinded",
+  "broken",
+  "clumsy",
+  "concealed",
+  "confused",
+  "controlled",
+  "dazzled",
+  "deafened",
+  "doomed",
+  "drained",
+  "dying",
+  "encumbered",
+  "enfeebled",
+  "fascinated",
+  "fatigued",
+  "flat-footed",
+  "fleeing",
+  "frightened",
+  "grabbed",
+  "hidden",
+  "immobilized",
+  "invisible",
+  "paralyzed",
+  "persistent-damage",
+  "petrified",
+  "prone",
+  "quickened",
+  "restrained",
+  "sickened",
+  "slowed",
+  "stunned",
+  "stupefied",
+  "unconscious",
+  "undetected",
+  "wounded"
+];
 async function parseQuickRollInput(rawInput) {
   const trimmedInput = rawInput.trim();
   if (!trimmedInput) {
@@ -132,6 +169,9 @@ async function parseQuickRollInput(rawInput) {
   }
   console.log(`PF2e Quick Rolls | Parsing quick roll input: ${trimmedInput}`);
   try {
+    if (trimmedInput.startsWith("/")) {
+      return await parseConditionCommand(trimmedInput);
+    }
     if (/^[0-9]/.test(trimmedInput)) {
       return await parseDamageCommand(trimmedInput);
     }
@@ -149,6 +189,46 @@ async function parseQuickRollInput(rawInput) {
     return false;
   }
   notifyUser("PF2e Quick Rolls: Eingabeformat nicht erkannt.");
+  return false;
+}
+async function parseConditionCommand(input) {
+  const conditionInput = input.slice(1).trim();
+  const match = conditionInput.match(/^([a-zA-Z-]+)(?:\s+(\d+))?$/);
+  if (!match) {
+    notifyUser("PF2e Quick Rolls: Condition nicht erkannt. Verwende z.B. '/prone' oder '/clumsy 1'.");
+    return false;
+  }
+  const [, aliasToken, valueToken] = match;
+  const slug = resolveConditionSlug(aliasToken);
+  if (!slug) {
+    notifyUser(`PF2e Quick Rolls: Unbekannte Condition '${aliasToken.toLowerCase()}'.`);
+    return false;
+  }
+  const value = valueToken ? Number.parseInt(valueToken, 10) : void 0;
+  if (valueToken && (Number.isNaN(value) || value <= 0)) {
+    notifyUser("PF2e Quick Rolls: Condition-Wert muss eine positive Zahl sein.");
+    return false;
+  }
+  const selectedToken = canvas?.tokens?.controlled?.[0];
+  const actor = selectedToken?.actor;
+  if (!actor) {
+    notifyUser("PF2e Quick Rolls: Bitte w\xE4hle einen Token aus, um eine Condition zu setzen.");
+    return false;
+  }
+  const options = value === void 0 ? void 0 : { value };
+  if (typeof actor.increaseCondition === "function") {
+    await actor.increaseCondition(slug, options);
+    return true;
+  }
+  if (typeof actor.toggleCondition === "function") {
+    await actor.toggleCondition(slug, { active: true, ...options ?? {} });
+    return true;
+  }
+  if (typeof actor.addCondition === "function") {
+    await actor.addCondition(slug, options);
+    return true;
+  }
+  notifyUser("PF2e Quick Rolls: Condition-API nicht verf\xFCgbar.");
   return false;
 }
 async function parseDamageCommand(input) {
@@ -264,6 +344,29 @@ function notifyUser(message) {
     return;
   }
   console.warn(message);
+}
+function resolveConditionSlug(alias) {
+  const normalizedAlias = normalizeConditionToken(alias);
+  const slugs = getAvailableConditionSlugs();
+  const exactMatch = slugs.find((slug) => normalizeConditionToken(slug) === normalizedAlias);
+  if (exactMatch) {
+    return exactMatch;
+  }
+  if (normalizedAlias.length < 3) {
+    return null;
+  }
+  const prefixMatches = slugs.filter(
+    (slug) => normalizeConditionToken(slug).startsWith(normalizedAlias)
+  );
+  return prefixMatches.length === 1 ? prefixMatches[0] : null;
+}
+function getAvailableConditionSlugs() {
+  const configSlugs = Object.keys(CONFIG?.PF2E?.conditionTypes ?? {});
+  const slugs = configSlugs.length > 0 ? configSlugs : FALLBACK_CONDITION_SLUGS;
+  return Array.from(new Set(slugs));
+}
+function normalizeConditionToken(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 // src/module/app/QuickRollPrompt.ts
