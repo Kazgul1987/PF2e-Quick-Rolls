@@ -3,7 +3,7 @@
   "name": "pf2e-quick-rolls",
   "title": "PF2e Quick Rolls",
   "description": "Quality-of-life quick roll utilities for the Pathfinder Second Edition system.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "compatibility": {
     "minimum": "13",
