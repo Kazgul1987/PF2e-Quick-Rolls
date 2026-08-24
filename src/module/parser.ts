@@ -1,4 +1,5 @@
 import { resolveDamageType, rollDamage } from "./damage";
+import { buildCheckInline } from "./checks";
 
 type ActionUseOptions = {
   event?: unknown;
@@ -346,7 +347,7 @@ export async function parseCheckCommand(input: string): Promise<boolean> {
     return false;
   }
 
-  const content = `@Check[${skill}|dc:${dc}]`;
+  const content = buildCheckInline(skill, { dc });
   await ChatMessage.create({ content });
   return true;
 }
