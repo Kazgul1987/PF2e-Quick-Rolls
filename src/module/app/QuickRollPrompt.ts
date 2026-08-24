@@ -1,4 +1,5 @@
 import { postCheck, prepareCheckButtons } from "../checks";
+import { parseCheckDCInput, resolveCheckDC } from "../check-dc";
 import { DAMAGE_TYPE_ICONS, getAvailableDamageTypes, rollDamage, STANDARD_DAMAGE_TYPES } from "../damage";
 import { parseQuickRollInput } from "../parser";
 
@@ -21,6 +22,7 @@ declare const CONFIG: { PF2E?: {
   skills?: Record<string, { label: string } | string>;
 } };
 declare const game: { i18n?: { localize?: (key: string) => string } };
+declare const ui: { notifications?: { warn?: (message: string) => void } };
 
 const BaseApplication = foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2,
@@ -93,7 +95,20 @@ export class QuickRollPrompt extends BaseApplication {
     });
     root.querySelectorAll<HTMLButtonElement>("[data-check]").forEach((button) => {
       button.addEventListener("click", async () => {
-        if (await postCheck(button.dataset.check ?? "")) await this.close();
+        const resolved = resolveCheckDC(parseCheckDCInput(input.value));
+        if (!resolved.valid) {
+          const message = resolved.reason === "level"
+            ? "PF2e Quick Rolls: Ungültiges Level für DC-by-Level (gültig: -1 bis 25)."
+            : "PF2e Quick Rolls: Ungültige DC-Eingabe.";
+          ui?.notifications?.warn?.(message);
+          input.focus();
+          return;
+        }
+
+        const posted = resolved.dc === undefined
+          ? await postCheck(button.dataset.check ?? "")
+          : await postCheck(button.dataset.check ?? "", { dc: resolved.dc });
+        if (posted) await this.close();
       });
     });
   }

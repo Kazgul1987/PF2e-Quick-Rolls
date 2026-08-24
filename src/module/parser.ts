@@ -1,5 +1,6 @@
 import { resolveDamageType, rollDamage } from "./damage";
 import { buildCheckInline } from "./checks";
+import { getDCByLevel, parseCheckDCInput, resolveCheckDC } from "./check-dc";
 
 type ActionUseOptions = {
   event?: unknown;
@@ -121,11 +122,6 @@ const ACTION_ALIASES: Record<string, string> = {
   "recall-knowledge": "recallKnowledge",
   recall: "recallKnowledge",
 };
-
-const STANDARD_DC_BY_LEVEL: number[] = [
-  14, 15, 16, 18, 19, 20, 22, 23, 24, 26, 27, 28, 30,
-  31, 32, 34, 35, 36, 38, 39, 40, 42, 44, 46, 48, 50,
-];
 
 const FALLBACK_CONDITION_SLUGS: string[] = [
   "blinded",
@@ -330,15 +326,20 @@ export async function parseCheckCommand(input: string): Promise<boolean> {
     return false;
   }
 
-  let dc: number;
-  if (qualifier === "dc") {
-    dc = value;
-  } else {
-    if (value < 0 || value >= STANDARD_DC_BY_LEVEL.length) {
+  let dc: number | undefined;
+  if (qualifier === "level") {
+    dc = getDCByLevel(value);
+    if (dc === undefined) {
       notifyUser("PF2e Quick Rolls: Standard-DCs sind nur für Stufen 0–25 verfügbar.");
       return false;
     }
-    dc = STANDARD_DC_BY_LEVEL[value];
+  } else {
+    const resolved = resolveCheckDC(parseCheckDCInput(`DC ${value}`));
+    if (!resolved.valid || resolved.dc === undefined) {
+      notifyUser("PF2e Quick Rolls: Ungültige DC-Eingabe.");
+      return false;
+    }
+    dc = resolved.dc;
   }
 
   if (!ChatMessage?.create) {
