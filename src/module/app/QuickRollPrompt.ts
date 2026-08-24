@@ -3,6 +3,7 @@ import { parseQuickRollInput } from "../parser";
 
 type RenderOptions = Record<string, unknown>;
 type ApplicationV2Instance = {
+  readonly element: HTMLElement;
   render(options?: RenderOptions): Promise<unknown>;
   close(options?: Record<string, unknown>): Promise<void>;
 };
@@ -24,7 +25,7 @@ const BaseApplication = foundry.applications.api.HandlebarsApplicationMixin(
 const GROUPS = {
   Physical: ["bludgeoning", "piercing", "slashing", "bleed"],
   Energy: ["acid", "cold", "electricity", "fire", "force", "sonic"],
-  Other: ["mental", "poison", "spirit", "vitality", "void"],
+  Other: ["mental", "poison", "spirit", "vitality", "void", "untyped"],
 } as const;
 
 export class QuickRollPrompt extends BaseApplication {
@@ -63,9 +64,9 @@ export class QuickRollPrompt extends BaseApplication {
   }
 
   protected _onRender(_context: unknown, _options: RenderOptions): void {
-    const root = document.getElementById("pf2e-quick-rolls-quick-roll-prompt");
-    const input = root?.querySelector<HTMLInputElement>("[name=quick-roll-input]");
-    if (!root || !input) return;
+    const root = this.element;
+    const input = root.querySelector<HTMLInputElement>("[name=quick-roll-input]");
+    if (!input) return;
     input.focus();
     input.addEventListener("keydown", (event) => void this.handleKeydown(event, input));
     root.querySelectorAll<HTMLButtonElement>("[data-damage-type]").forEach((button) => {

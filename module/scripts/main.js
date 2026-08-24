@@ -14,7 +14,8 @@ var STANDARD_DAMAGE_TYPES = [
   "poison",
   "spirit",
   "vitality",
-  "void"
+  "void",
+  "untyped"
 ];
 var LEGACY_ALIASES = {
   positive: "vitality",
@@ -64,10 +65,6 @@ async function rollDamage(formula, damageType) {
   try {
     if (ui?.chat?.processMessage) {
       await ui.chat.processMessage(command, {});
-      return true;
-    }
-    if (game?.dice?.roll) {
-      await game.dice.roll(command);
       return true;
     }
   } catch (error) {
@@ -408,7 +405,7 @@ var BaseApplication = foundry.applications.api.HandlebarsApplicationMixin(
 var GROUPS = {
   Physical: ["bludgeoning", "piercing", "slashing", "bleed"],
   Energy: ["acid", "cold", "electricity", "fire", "force", "sonic"],
-  Other: ["mental", "poison", "spirit", "vitality", "void"]
+  Other: ["mental", "poison", "spirit", "vitality", "void", "untyped"]
 };
 var QuickRollPrompt2 = class extends BaseApplication {
   constructor() {
@@ -434,9 +431,9 @@ var QuickRollPrompt2 = class extends BaseApplication {
     return { groups };
   }
   _onRender(_context, _options) {
-    const root = document.getElementById("pf2e-quick-rolls-quick-roll-prompt");
-    const input = root?.querySelector("[name=quick-roll-input]");
-    if (!root || !input)
+    const root = this.element;
+    const input = root.querySelector("[name=quick-roll-input]");
+    if (!input)
       return;
     input.focus();
     input.addEventListener("keydown", (event) => void this.handleKeydown(event, input));
