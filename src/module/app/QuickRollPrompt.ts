@@ -1,4 +1,5 @@
-import { getAvailableDamageTypes, rollDamage, STANDARD_DAMAGE_TYPES } from "../damage";
+import { postCheck, SAVE_AND_PERCEPTION_CHECKS } from "../checks";
+import { DAMAGE_TYPE_ICONS, getAvailableDamageTypes, rollDamage, STANDARD_DAMAGE_TYPES } from "../damage";
 import { parseQuickRollInput } from "../parser";
 
 type RenderOptions = Record<string, unknown>;
@@ -15,7 +16,10 @@ declare const foundry: {
     HandlebarsApplicationMixin: (base: ApplicationV2Constructor) => ApplicationV2Constructor;
   } };
 };
-declare const CONFIG: { PF2E?: { damageTypes?: Record<string, string> } };
+declare const CONFIG: { PF2E?: {
+  damageTypes?: Record<string, string>;
+  skills?: Record<string, { label: string } | string>;
+} };
 declare const game: { i18n?: { localize?: (key: string) => string } };
 
 const BaseApplication = foundry.applications.api.HandlebarsApplicationMixin(
@@ -33,7 +37,7 @@ export class QuickRollPrompt extends BaseApplication {
     id: "pf2e-quick-rolls-quick-roll-prompt",
     classes: ["pf2e-quick-rolls", "quick-roll-prompt"],
     window: { title: "PF2e Quick Rolls" },
-    position: { width: 420, height: "auto" },
+    position: { width: 760, height: "auto" },
   };
 
   static PARTS = {
@@ -45,7 +49,7 @@ export class QuickRollPrompt extends BaseApplication {
   protected async _prepareContext(): Promise<Record<string, unknown>> {
     const available = getAvailableDamageTypes();
     const labels = CONFIG?.PF2E?.damageTypes ?? {};
-    const groups: Array<{ label: string; types: Array<{ type: string; label: string; title: string }> }> = Object.entries(GROUPS).map(([label, types]) => ({
+    const groups: Array<{ label: string; types: Array<{ type: string; label: string; title: string; icon: string | null }> }> = Object.entries(GROUPS).map(([label, types]) => ({
       label,
       types: types.filter((type) => available.has(type)).map((type) => ({
         type,
@@ -53,14 +57,25 @@ export class QuickRollPrompt extends BaseApplication {
           ? type[0].toUpperCase()
           : this.localize(labels[type] ?? type),
         title: this.localize(labels[type] ?? type),
+        icon: DAMAGE_TYPE_ICONS[type] ?? null,
       })),
     }));
     const grouped = new Set(STANDARD_DAMAGE_TYPES);
     const extraTypes = [...available].filter((type) => !grouped.has(type as typeof STANDARD_DAMAGE_TYPES[number]));
     if (extraTypes.length) {
-      groups.push({ label: "Additional", types: extraTypes.map((type) => ({ type, label: this.localize(labels[type] ?? type), title: this.localize(labels[type] ?? type) })) });
+      groups.push({ label: "Additional", types: extraTypes.map((type) => ({ type, label: this.localize(labels[type] ?? type), title: this.localize(labels[type] ?? type), icon: DAMAGE_TYPE_ICONS[type] ?? null })) });
     }
-    return { groups };
+    const saveLabels: Record<string, string> = {
+      fortitude: "PF2E.SavesFortitude", reflex: "PF2E.SavesReflex",
+      will: "PF2E.SavesWill", perception: "PF2E.PerceptionLabel",
+    };
+    const checks = SAVE_AND_PERCEPTION_CHECKS.map((check) => ({
+      check, label: this.localize(saveLabels[check]),
+    }));
+    const skills = Object.entries(CONFIG?.PF2E?.skills ?? {})
+      .map(([check, data]) => ({ check, label: this.localize(typeof data === "string" ? data : data.label) }))
+      .sort((a, b) => a.label.localeCompare(b.label, game?.i18n ? undefined : "en"));
+    return { groups, checks, skills };
   }
 
   protected _onRender(_context: unknown, _options: RenderOptions): void {
@@ -80,6 +95,11 @@ export class QuickRollPrompt extends BaseApplication {
           element.setAttribute("aria-pressed", String(selected));
         });
         input.focus();
+      });
+    });
+    root.querySelectorAll<HTMLButtonElement>("[data-check]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        if (await postCheck(button.dataset.check ?? "")) await this.close();
       });
     });
   }

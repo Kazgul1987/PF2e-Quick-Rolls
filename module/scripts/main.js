@@ -1,3 +1,24 @@
+// src/module/checks.ts
+var SAVE_AND_PERCEPTION_CHECKS = ["fortitude", "reflex", "will", "perception"];
+function getAvailableChecks() {
+  return /* @__PURE__ */ new Set([...SAVE_AND_PERCEPTION_CHECKS, ...Object.keys(CONFIG?.PF2E?.skills ?? {})]);
+}
+async function postCheck(check) {
+  const slug = check.trim().toLowerCase();
+  if (!/^[a-z][a-z0-9-]*$/.test(slug) || !getAvailableChecks().has(slug)) {
+    ui?.notifications?.warn?.("PF2e Quick Rolls: Unbekannter Check.");
+    return false;
+  }
+  try {
+    await ChatMessage.create({ content: `@Check[${slug}]` });
+    return true;
+  } catch (error) {
+    console.error("PF2e Quick Rolls | Posting check failed:", error);
+    ui?.notifications?.warn?.("PF2e Quick Rolls: Check konnte nicht im Chat ver\xF6ffentlicht werden.");
+    return false;
+  }
+}
+
 // src/module/damage.ts
 var STANDARD_DAMAGE_TYPES = [
   "bludgeoning",
@@ -17,6 +38,24 @@ var STANDARD_DAMAGE_TYPES = [
   "void",
   "untyped"
 ];
+var DAMAGE_TYPE_ICONS = {
+  bleed: "droplet",
+  acid: "vial",
+  bludgeoning: "hammer",
+  cold: "snowflake",
+  electricity: "bolt",
+  fire: "fire",
+  force: "sparkles",
+  mental: "brain",
+  piercing: "bow-arrow",
+  poison: "spider",
+  slashing: "axe",
+  sonic: "waveform-lines",
+  spirit: "ghost",
+  vitality: "sun",
+  void: "skull",
+  untyped: null
+};
 var LEGACY_ALIASES = {
   positive: "vitality",
   negative: "void"
@@ -420,15 +459,27 @@ var QuickRollPrompt2 = class extends BaseApplication {
       types: types.filter((type) => available.has(type)).map((type) => ({
         type,
         label: ["bludgeoning", "piercing", "slashing"].includes(type) ? type[0].toUpperCase() : this.localize(labels[type] ?? type),
-        title: this.localize(labels[type] ?? type)
+        title: this.localize(labels[type] ?? type),
+        icon: DAMAGE_TYPE_ICONS[type] ?? null
       }))
     }));
     const grouped = new Set(STANDARD_DAMAGE_TYPES);
     const extraTypes = [...available].filter((type) => !grouped.has(type));
     if (extraTypes.length) {
-      groups.push({ label: "Additional", types: extraTypes.map((type) => ({ type, label: this.localize(labels[type] ?? type), title: this.localize(labels[type] ?? type) })) });
+      groups.push({ label: "Additional", types: extraTypes.map((type) => ({ type, label: this.localize(labels[type] ?? type), title: this.localize(labels[type] ?? type), icon: DAMAGE_TYPE_ICONS[type] ?? null })) });
     }
-    return { groups };
+    const saveLabels = {
+      fortitude: "PF2E.SavesFortitude",
+      reflex: "PF2E.SavesReflex",
+      will: "PF2E.SavesWill",
+      perception: "PF2E.PerceptionLabel"
+    };
+    const checks = SAVE_AND_PERCEPTION_CHECKS.map((check) => ({
+      check,
+      label: this.localize(saveLabels[check])
+    }));
+    const skills = Object.entries(CONFIG?.PF2E?.skills ?? {}).map(([check, data]) => ({ check, label: this.localize(typeof data === "string" ? data : data.label) })).sort((a, b) => a.label.localeCompare(b.label, game?.i18n ? void 0 : "en"));
+    return { groups, checks, skills };
   }
   _onRender(_context, _options) {
     const root = this.element;
@@ -446,6 +497,12 @@ var QuickRollPrompt2 = class extends BaseApplication {
           element.setAttribute("aria-pressed", String(selected));
         });
         input.focus();
+      });
+    });
+    root.querySelectorAll("[data-check]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        if (await postCheck(button.dataset.check ?? ""))
+          await this.close();
       });
     });
   }
@@ -474,7 +531,7 @@ QuickRollPrompt2.DEFAULT_OPTIONS = {
   id: "pf2e-quick-rolls-quick-roll-prompt",
   classes: ["pf2e-quick-rolls", "quick-roll-prompt"],
   window: { title: "PF2e Quick Rolls" },
-  position: { width: 420, height: "auto" }
+  position: { width: 760, height: "auto" }
 };
 QuickRollPrompt2.PARTS = {
   prompt: { template: "modules/pf2e-quick-rolls/templates/quick-roll-prompt.hbs" }

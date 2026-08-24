@@ -18,6 +18,14 @@ export const STANDARD_DAMAGE_TYPES = [
   "mental", "poison", "spirit", "vitality", "void", "untyped",
 ] as const;
 
+/** Font Awesome icon names used by PF2e V14's damage renderer. */
+export const DAMAGE_TYPE_ICONS: Readonly<Record<string, string | null>> = {
+  bleed: "droplet", acid: "vial", bludgeoning: "hammer", cold: "snowflake",
+  electricity: "bolt", fire: "fire", force: "sparkles", mental: "brain",
+  piercing: "bow-arrow", poison: "spider", slashing: "axe", sonic: "waveform-lines",
+  spirit: "ghost", vitality: "sun", void: "skull", untyped: null,
+};
+
 const LEGACY_ALIASES: Record<string, string> = {
   positive: "vitality",
   negative: "void",
