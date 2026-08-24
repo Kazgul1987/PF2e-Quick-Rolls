@@ -183,7 +183,7 @@ describe("parseQuickRollInput", () => {
 
     expect(result).toBe(true);
     expect(globalThis.ChatMessage?.create).toHaveBeenCalledWith({
-      content: "@Check[perception|dc:19]",
+      content: "@Check[type:perception|dc:19]",
     });
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
   });
@@ -193,7 +193,7 @@ describe("parseQuickRollInput", () => {
 
     expect(result).toBe(true);
     expect(globalThis.ChatMessage?.create).toHaveBeenCalledWith({
-      content: "@Check[perception|dc:28]",
+      content: "@Check[type:perception|dc:28]",
     });
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
   });
@@ -203,7 +203,7 @@ describe("parseQuickRollInput", () => {
 
     expect(result).toBe(true);
     expect(globalThis.ChatMessage?.create).toHaveBeenCalledWith({
-      content: "@Check[fortitude|dc:18]",
+      content: "@Check[type:fortitude|dc:18]",
     });
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
   });

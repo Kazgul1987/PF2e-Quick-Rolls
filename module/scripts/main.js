@@ -3,14 +3,24 @@ var SAVE_AND_PERCEPTION_CHECKS = ["fortitude", "reflex", "will", "perception"];
 function getAvailableChecks() {
   return /* @__PURE__ */ new Set([...SAVE_AND_PERCEPTION_CHECKS, ...Object.keys(CONFIG?.PF2E?.skills ?? {})]);
 }
+function buildCheckInline(type, options = {}) {
+  const parameters = [`type:${type}`];
+  if (options.dc !== void 0)
+    parameters.push(`dc:${options.dc}`);
+  return `@Check[${parameters.join("|")}]`;
+}
 async function postCheck(check) {
   const slug = check.trim().toLowerCase();
   if (!/^[a-z][a-z0-9-]*$/.test(slug) || !getAvailableChecks().has(slug)) {
     ui?.notifications?.warn?.("PF2e Quick Rolls: Unbekannter Check.");
     return false;
   }
+  if (typeof ChatMessage === "undefined" || typeof ChatMessage.create !== "function") {
+    ui?.notifications?.warn?.("PF2e Quick Rolls: Chat nicht verf\xFCgbar.");
+    return false;
+  }
   try {
-    await ChatMessage.create({ content: `@Check[${slug}]` });
+    await ChatMessage.create({ content: buildCheckInline(slug) });
     return true;
   } catch (error) {
     console.error("PF2e Quick Rolls | Posting check failed:", error);
@@ -382,7 +392,7 @@ async function parseCheckCommand(input) {
     notifyUser("PF2e Quick Rolls: Chat nicht verf\xFCgbar.");
     return false;
   }
-  const content = `@Check[${skill}|dc:${dc}]`;
+  const content = buildCheckInline(skill, { dc });
   await ChatMessage.create({ content });
   return true;
 }

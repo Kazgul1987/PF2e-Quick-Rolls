@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { postCheck } from "../src/module/checks";
+import { buildCheckInline, postCheck } from "../src/module/checks";
 
 describe("PF2e inline checks", () => {
   beforeEach(() => {
@@ -11,20 +11,37 @@ describe("PF2e inline checks", () => {
     globalThis.game = { actorRoll: vi.fn() } as never;
   });
 
+  it.each(["reflex", "fortitude", "will", "perception", "athletics", "medicine", "stealth"])(
+    "builds the canonical inline syntax for %s",
+    (slug) => expect(buildCheckInline(slug)).toBe(`@Check[type:${slug}]`),
+  );
+
+  it("includes a DC after the explicit check type", () => {
+    expect(buildCheckInline("perception", { dc: 19 })).toBe("@Check[type:perception|dc:19]");
+  });
+
   it.each(["fortitude", "reflex", "will", "perception"])("posts the %s check", async (slug) => {
     expect(await postCheck(slug)).toBe(true);
-    expect(globalThis.ChatMessage.create).toHaveBeenCalledWith({ content: `@Check[${slug}]` });
+    expect(globalThis.ChatMessage.create).toHaveBeenCalledWith({ content: `@Check[type:${slug}]` });
     expect((globalThis.game as never as { actorRoll: ReturnType<typeof vi.fn> }).actorRoll).not.toHaveBeenCalled();
   });
 
   it.each(["athletics", "acrobatics", "medicine", "stealth"])("posts the %s skill", async (slug) => {
     expect(await postCheck(slug)).toBe(true);
-    expect(globalThis.ChatMessage.create).toHaveBeenCalledWith({ content: `@Check[${slug}]` });
+    expect(globalThis.ChatMessage.create).toHaveBeenCalledWith({ content: `@Check[type:${slug}]` });
   });
 
   it("rejects unknown skills without creating a message or rolling", async () => {
     expect(await postCheck("not-a-skill")).toBe(false);
     expect(globalThis.ChatMessage.create).not.toHaveBeenCalled();
     expect((globalThis.game as never as { actorRoll: ReturnType<typeof vi.fn> }).actorRoll).not.toHaveBeenCalled();
+  });
+
+  it("warns without throwing when the chat API is unavailable", async () => {
+    globalThis.ChatMessage = {} as never;
+    expect(await postCheck("reflex")).toBe(false);
+    expect(globalThis.ui.notifications.warn).toHaveBeenCalledWith(
+      "PF2e Quick Rolls: Chat nicht verfügbar.",
+    );
   });
 });
