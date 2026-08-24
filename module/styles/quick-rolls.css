@@ -8,6 +8,18 @@
   gap: 0.5rem;
 }
 
+.quick-roll-prompt__damage-types { display: grid; gap: 0.55rem; }
+.quick-roll-prompt__group { border: 0; margin: 0; padding: 0; }
+.quick-roll-prompt__group legend { font-weight: 600; margin-bottom: 0.25rem; }
+.quick-roll-prompt__buttons { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.quick-roll-prompt__buttons button { width: auto; min-width: 2.25rem; padding: 0.25rem 0.5rem; }
+.quick-roll-prompt__buttons button.is-selected {
+  background: var(--color-warm-2, #9f6b28);
+  border-color: var(--color-warm-1, #f3c267);
+  color: var(--color-light-1, #fff);
+  box-shadow: 0 0 0 1px var(--color-warm-1, #f3c267);
+}
+
 .quick-roll-prompt__label {
   font-weight: 600;
 }

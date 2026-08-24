@@ -1,3 +1,5 @@
+import { resolveDamageType, rollDamage } from "./damage";
+
 type ActionUseOptions = {
   event?: unknown;
 };
@@ -51,40 +53,6 @@ declare const CONFIG: {
   PF2E?: {
     conditionTypes?: Record<string, unknown>;
   };
-};
-
-const DAMAGE_TYPE_ALIASES: Record<string, string> = {
-  acid: "acid",
-  aci: "acid",
-  cold: "cold",
-  col: "cold",
-  electricity: "electricity",
-  ele: "electricity",
-  elec: "electricity",
-  fire: "fire",
-  fir: "fire",
-  force: "force",
-  sonic: "sonic",
-  son: "sonic",
-  poison: "poison",
-  poi: "poison",
-  mental: "mental",
-  men: "mental",
-  negative: "negative",
-  neg: "negative",
-  positive: "positive",
-  pos: "positive",
-  vitality: "vitality",
-  vit: "vitality",
-  void: "void",
-  voi: "void",
-  bludgeoning: "bludgeoning",
-  blu: "bludgeoning",
-  blud: "bludgeoning",
-  piercing: "piercing",
-  pie: "piercing",
-  slashing: "slashing",
-  sla: "slashing",
 };
 
 const SKILL_AND_SAVE_ALIASES: Record<string, string> = {
@@ -257,7 +225,7 @@ export async function parseConditionCommand(input: string): Promise<boolean> {
   }
 
   const value = valueToken ? Number.parseInt(valueToken, 10) : undefined;
-  if (valueToken && (Number.isNaN(value) || value <= 0)) {
+  if (value !== undefined && (Number.isNaN(value) || value <= 0)) {
     notifyUser("PF2e Quick Rolls: Condition-Wert muss eine positive Zahl sein.");
     return false;
   }
@@ -304,7 +272,7 @@ export async function parseDamageCommand(input: string): Promise<boolean> {
 
   const formula = match[1].replace(/\s+/g, "");
   const damageAlias = match[2].toLowerCase();
-  const damageType = DAMAGE_TYPE_ALIASES[damageAlias];
+  const damageType = resolveDamageType(damageAlias);
 
   if (!damageType) {
     notifyUser(`PF2e Quick Rolls: Unbekannte Schadensart '${damageAlias}'.`);
@@ -316,24 +284,7 @@ export async function parseDamageCommand(input: string): Promise<boolean> {
     return false;
   }
 
-  const command = `/r (${formula})[${damageType}]`;
-  if (!game?.dice?.roll) {
-    try {
-      if (ui?.chat?.processMessage) {
-        await ui.chat.processMessage(command, {});
-        return true;
-      }
-    } catch (error) {
-      console.error("PF2e Quick Rolls | Chat-Verarbeitung fehlgeschlagen:", error);
-    }
-
-    console.warn("PF2e Quick Rolls | game.dice.roll ist nicht verfügbar.");
-    notifyUser("PF2e Quick Rolls: Würfelmechanik nicht verfügbar.");
-    return false;
-  }
-
-  await game.dice.roll(command);
-  return true;
+  return rollDamage(formula, damageType);
 }
 
 export async function parseCheckCommand(input: string): Promise<boolean> {
@@ -415,8 +366,9 @@ async function invokeActionMacro(slug: string): Promise<boolean> {
     return true;
   }
 
-  if (legacyEntry && typeof (legacyEntry as PF2eActionMacro).use === "function") {
-    await (legacyEntry as PF2eActionMacro).use();
+  const legacyUse = legacyEntry && (legacyEntry as PF2eActionMacro).use;
+  if (typeof legacyUse === "function") {
+    await legacyUse();
     return true;
   }
 

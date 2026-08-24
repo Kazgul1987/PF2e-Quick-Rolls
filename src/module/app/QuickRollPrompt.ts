@@ -1,108 +1,106 @@
+import { getAvailableDamageTypes, rollDamage, STANDARD_DAMAGE_TYPES } from "../damage";
 import { parseQuickRollInput } from "../parser";
 
-type ApplicationRenderOptions = Record<string, unknown>;
-type ApplicationCloseOptions = { force?: boolean };
-
-type ApplicationOptions = {
-  id?: string;
-  classes?: string[];
-  template?: string;
-  width?: number;
-  height?: number;
-  title?: string;
+type RenderOptions = Record<string, unknown>;
+type ApplicationV2Instance = {
+  render(options?: RenderOptions): Promise<unknown>;
+  close(options?: Record<string, unknown>): Promise<void>;
 };
+type ApplicationV2Constructor = new (options?: Record<string, unknown>) => ApplicationV2Instance;
 
-declare class Application {
-  constructor(options?: ApplicationOptions);
-  static get defaultOptions(): ApplicationOptions;
-  render(force?: boolean, options?: ApplicationRenderOptions): void;
-  close(options?: ApplicationCloseOptions): Promise<void>;
-  activateListeners(html: unknown): void;
-}
+declare const foundry: {
+  applications: { api: {
+    ApplicationV2: ApplicationV2Constructor;
+    HandlebarsApplicationMixin: (base: ApplicationV2Constructor) => ApplicationV2Constructor;
+  } };
+};
+declare const CONFIG: { PF2E?: { damageTypes?: Record<string, string> } };
+declare const game: { i18n?: { localize?: (key: string) => string } };
 
-/**
- * Quick-roll prompt application presenting a single text input to the user.
- */
-export class QuickRollPrompt extends Application {
-  static override get defaultOptions(): ApplicationOptions {
-    const options = super.defaultOptions ?? {};
-    const classes = new Set(["pf2e-quick-rolls", "quick-roll-prompt"]);
+const BaseApplication = foundry.applications.api.HandlebarsApplicationMixin(
+  foundry.applications.api.ApplicationV2,
+);
 
-    for (const cssClass of options.classes ?? []) {
-      classes.add(cssClass);
+const GROUPS = {
+  Physical: ["bludgeoning", "piercing", "slashing", "bleed"],
+  Energy: ["acid", "cold", "electricity", "fire", "force", "sonic"],
+  Other: ["mental", "poison", "spirit", "vitality", "void"],
+} as const;
+
+export class QuickRollPrompt extends BaseApplication {
+  static DEFAULT_OPTIONS = {
+    id: "pf2e-quick-rolls-quick-roll-prompt",
+    classes: ["pf2e-quick-rolls", "quick-roll-prompt"],
+    window: { title: "PF2e Quick Rolls" },
+    position: { width: 420, height: "auto" },
+  };
+
+  static PARTS = {
+    prompt: { template: "modules/pf2e-quick-rolls/templates/quick-roll-prompt.hbs" },
+  };
+
+  private selectedDamageType: string | null = null;
+
+  protected async _prepareContext(): Promise<Record<string, unknown>> {
+    const available = getAvailableDamageTypes();
+    const labels = CONFIG?.PF2E?.damageTypes ?? {};
+    const groups: Array<{ label: string; types: Array<{ type: string; label: string; title: string }> }> = Object.entries(GROUPS).map(([label, types]) => ({
+      label,
+      types: types.filter((type) => available.has(type)).map((type) => ({
+        type,
+        label: ["bludgeoning", "piercing", "slashing"].includes(type)
+          ? type[0].toUpperCase()
+          : this.localize(labels[type] ?? type),
+        title: this.localize(labels[type] ?? type),
+      })),
+    }));
+    const grouped = new Set(STANDARD_DAMAGE_TYPES);
+    const extraTypes = [...available].filter((type) => !grouped.has(type as typeof STANDARD_DAMAGE_TYPES[number]));
+    if (extraTypes.length) {
+      groups.push({ label: "Additional", types: extraTypes.map((type) => ({ type, label: this.localize(labels[type] ?? type), title: this.localize(labels[type] ?? type) })) });
     }
-
-    return {
-      ...options,
-      id: "pf2e-quick-rolls-quick-roll-prompt",
-      classes: Array.from(classes),
-      template: "modules/pf2e-quick-rolls/templates/quick-roll-prompt.hbs",
-      width: options.width ?? 360,
-      height: options.height ?? 120,
-      title: options.title ?? "PF2e Quick Roll",
-    } satisfies ApplicationOptions;
+    return { groups };
   }
 
-  override activateListeners(html: unknown): void {
-    super.activateListeners(html);
-
-    const root = this.extractRootElement(html);
-    const input = root?.querySelector<HTMLInputElement>("input[name=\"quick-roll-input\"]");
-
-    if (!input) {
-      console.warn("PF2e Quick Rolls | QuickRollPrompt rendered without an input element.");
-      return;
-    }
-
+  protected _onRender(_context: unknown, _options: RenderOptions): void {
+    const root = document.getElementById("pf2e-quick-rolls-quick-roll-prompt");
+    const input = root?.querySelector<HTMLInputElement>("[name=quick-roll-input]");
+    if (!root || !input) return;
     input.focus();
     input.addEventListener("keydown", (event) => void this.handleKeydown(event, input));
-  }
-
-  private extractRootElement(html: unknown): HTMLElement | null {
-    if (!html) {
-      return null;
-    }
-
-    if (html instanceof HTMLElement) {
-      return html;
-    }
-
-    if (typeof html === "object" && 0 in (html as { [index: number]: unknown })) {
-      const candidate = (html as { [index: number]: unknown })[0];
-      if (candidate instanceof HTMLElement) {
-        return candidate;
-      }
-    }
-
-    return null;
+    root.querySelectorAll<HTMLButtonElement>("[data-damage-type]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this.selectedDamageType = this.selectedDamageType === button.dataset.damageType
+          ? null
+          : button.dataset.damageType ?? null;
+        root.querySelectorAll("[data-damage-type]").forEach((element) => {
+          const selected = element.getAttribute("data-damage-type") === this.selectedDamageType;
+          element.classList.toggle("is-selected", selected);
+          element.setAttribute("aria-pressed", String(selected));
+        });
+        input.focus();
+      });
+    });
   }
 
   private async handleKeydown(event: KeyboardEvent, input: HTMLInputElement): Promise<void> {
     if (event.key === "Escape") {
       event.preventDefault();
       await this.close();
-      return;
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const value = input.value.trim();
+      if (!value) return;
+      const processed = this.selectedDamageType
+        ? await rollDamage(value, this.selectedDamageType)
+        : await parseQuickRollInput(value);
+      if (processed) await this.close();
     }
+  }
 
-    if (event.key !== "Enter") {
-      return;
-    }
-
-    event.preventDefault();
-
-    const rawValue = input.value.trim();
-    if (!rawValue) {
-      await this.close();
-      return;
-    }
-
-    try {
-      const wasProcessed = await parseQuickRollInput(rawValue);
-      if (wasProcessed !== false) {
-        await this.close();
-      }
-    } catch (error) {
-      console.error("PF2e Quick Rolls | Failed to process quick roll input:", error);
-    }
+  private localize(label: string): string {
+    const localized = game?.i18n?.localize?.(label);
+    if (localized && localized !== label) return localized;
+    return label.replace(/(^|-)(\w)/g, (_match, separator: string, letter: string) => `${separator}${letter.toUpperCase()}`);
   }
 }
