@@ -20,13 +20,13 @@
   <section class="quick-roll-prompt__column" aria-labelledby="quick-roll-checks-heading">
     <h2 id="quick-roll-checks-heading">Saves / Perception</h2>
     <div class="quick-roll-prompt__action-buttons">
-      {{#each checks}}<button type="button" data-check="{{check}}" title="{{label}}" aria-label="{{label}}">{{label}}</button>{{/each}}
+      {{#each checks}}<button type="button" data-check="{{slug}}" title="{{label}}" aria-label="{{label}}">{{label}}</button>{{/each}}
     </div>
   </section>
   <section class="quick-roll-prompt__column quick-roll-prompt__skills" aria-labelledby="quick-roll-skills-heading">
     <h2 id="quick-roll-skills-heading">Skills</h2>
     <div class="quick-roll-prompt__action-buttons">
-      {{#each skills}}<button type="button" data-check="{{check}}" title="{{label}}" aria-label="{{label}}">{{label}}</button>{{/each}}
+      {{#each skills}}<button type="button" data-check="{{slug}}" title="{{label}}" aria-label="{{label}}">{{label}}</button>{{/each}}
     </div>
   </section>
   </div>
