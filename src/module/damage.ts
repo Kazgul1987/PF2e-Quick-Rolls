@@ -5,9 +5,6 @@ type PF2eConfig = {
 };
 
 declare const CONFIG: { PF2E?: PF2eConfig };
-declare const game: {
-  dice?: { roll?: (formula: string) => Promise<unknown> | unknown };
-};
 declare const ui: {
   notifications?: { warn?: (message: string) => void };
   chat?: {
@@ -18,7 +15,7 @@ declare const ui: {
 export const STANDARD_DAMAGE_TYPES = [
   "bludgeoning", "piercing", "slashing", "bleed",
   "acid", "cold", "electricity", "fire", "force", "sonic",
-  "mental", "poison", "spirit", "vitality", "void",
+  "mental", "poison", "spirit", "vitality", "void", "untyped",
 ] as const;
 
 const LEGACY_ALIASES: Record<string, string> = {
@@ -47,6 +44,8 @@ export function resolveDamageType(value: string): DamageType | null {
 export function buildDamageFormula(formula: string, damageType: string): string | null {
   const normalizedFormula = formula.replace(/\s+/g, "");
   const resolvedType = resolveDamageType(damageType);
+  // Quick Rolls intentionally accepts only basic dice/arithmetic syntax.
+  // Advanced Foundry roll expressions should be entered through chat.
   if (!normalizedFormula || !resolvedType || !/^[0-9dD+\-*/()]+$/.test(normalizedFormula)) return null;
   return `(${normalizedFormula})[${resolvedType}]`;
 }
@@ -63,11 +62,6 @@ export async function rollDamage(formula: string, damageType: string): Promise<b
   try {
     if (ui?.chat?.processMessage) {
       await ui.chat.processMessage(command, {});
-      return true;
-    }
-    // Kept as a small fallback for worlds whose chat sidebar is not currently mounted.
-    if (game?.dice?.roll) {
-      await game.dice.roll(command);
       return true;
     }
   } catch (error) {

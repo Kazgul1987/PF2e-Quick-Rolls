@@ -6,7 +6,7 @@ describe("damage rolls", () => {
     vi.restoreAllMocks();
     globalThis.CONFIG = { PF2E: { damageTypes: Object.fromEntries([
       "acid", "bleed", "bludgeoning", "cold", "electricity", "fire", "force", "mental",
-      "piercing", "poison", "slashing", "sonic", "spirit", "vitality", "void",
+      "piercing", "poison", "slashing", "sonic", "spirit", "untyped", "vitality", "void",
     ].map((type) => [type, type])) } } as never;
     globalThis.game = { dice: { roll: vi.fn() } } as never;
     globalThis.ui = {
@@ -35,5 +35,23 @@ describe("damage rolls", () => {
   it("executes the normalized PF2e chat formula", async () => {
     expect(await rollDamage("8", "fire")).toBe(true);
     expect(globalThis.ui.chat.processMessage).toHaveBeenCalledWith("/r (8)[fire]", {});
+  });
+
+  it("reports unavailable rolling when the PF2e chat API is absent", async () => {
+    globalThis.ui = {
+      notifications: { warn: vi.fn() },
+      chat: {},
+    } as never;
+    const diceRoll = globalThis.game.dice.roll;
+
+    expect(await rollDamage("2d6", "fire")).toBe(false);
+    expect(diceRoll).not.toHaveBeenCalled();
+    expect(globalThis.ui.notifications.warn).toHaveBeenCalledWith(
+      "PF2e Quick Rolls: Würfelmechanik nicht verfügbar.",
+    );
+  });
+
+  it("supports untyped damage configured by PF2e", () => {
+    expect(buildDamageFormula("2d6", "untyped")).toBe("(2d6)[untyped]");
   });
 });
