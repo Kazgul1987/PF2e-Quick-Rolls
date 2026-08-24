@@ -1,4 +1,6 @@
-type SkillConfig = Record<string, { label: string } | string>;
+export type SkillConfig = Record<string, { label: string } | string>;
+
+export type CheckButton = { slug: string; label: string };
 
 declare const CONFIG: { PF2E?: { skills?: SkillConfig } };
 declare const ChatMessage: {
@@ -7,6 +9,32 @@ declare const ChatMessage: {
 declare const ui: { notifications?: { warn?: (message: string) => void } };
 
 export const SAVE_AND_PERCEPTION_CHECKS = ["fortitude", "reflex", "will", "perception"] as const;
+
+const SAVE_LABELS: Record<(typeof SAVE_AND_PERCEPTION_CHECKS)[number], string> = {
+  fortitude: "PF2E.SavesFortitude",
+  reflex: "PF2E.SavesReflex",
+  will: "PF2E.SavesWill",
+  perception: "PF2E.PerceptionLabel",
+};
+
+/** Keep technical PF2e slugs separate from the localized button labels. */
+export function prepareCheckButtons(
+  skills: SkillConfig,
+  localize: (label: string) => string,
+): { checks: CheckButton[]; skills: CheckButton[] } {
+  const checks = SAVE_AND_PERCEPTION_CHECKS.map((slug) => ({
+    slug,
+    label: localize(SAVE_LABELS[slug]),
+  }));
+  const skillButtons = Object.entries(skills)
+    .map(([slug, data]) => ({
+      slug,
+      label: localize(typeof data === "string" ? data : data.label),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  return { checks, skills: skillButtons };
+}
 
 export function getAvailableChecks(): Set<string> {
   return new Set([...SAVE_AND_PERCEPTION_CHECKS, ...Object.keys(CONFIG?.PF2E?.skills ?? {})]);

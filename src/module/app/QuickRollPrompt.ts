@@ -1,4 +1,4 @@
-import { postCheck, SAVE_AND_PERCEPTION_CHECKS } from "../checks";
+import { postCheck, prepareCheckButtons } from "../checks";
 import { DAMAGE_TYPE_ICONS, getAvailableDamageTypes, rollDamage, STANDARD_DAMAGE_TYPES } from "../damage";
 import { parseQuickRollInput } from "../parser";
 
@@ -65,16 +65,10 @@ export class QuickRollPrompt extends BaseApplication {
     if (extraTypes.length) {
       groups.push({ label: "Additional", types: extraTypes.map((type) => ({ type, label: this.localize(labels[type] ?? type), title: this.localize(labels[type] ?? type), icon: DAMAGE_TYPE_ICONS[type] ?? null })) });
     }
-    const saveLabels: Record<string, string> = {
-      fortitude: "PF2E.SavesFortitude", reflex: "PF2E.SavesReflex",
-      will: "PF2E.SavesWill", perception: "PF2E.PerceptionLabel",
-    };
-    const checks = SAVE_AND_PERCEPTION_CHECKS.map((check) => ({
-      check, label: this.localize(saveLabels[check]),
-    }));
-    const skills = Object.entries(CONFIG?.PF2E?.skills ?? {})
-      .map(([check, data]) => ({ check, label: this.localize(typeof data === "string" ? data : data.label) }))
-      .sort((a, b) => a.label.localeCompare(b.label, game?.i18n ? undefined : "en"));
+    const { checks, skills } = prepareCheckButtons(
+      CONFIG?.PF2E?.skills ?? {},
+      (label) => this.localize(label),
+    );
     return { groups, checks, skills };
   }
 

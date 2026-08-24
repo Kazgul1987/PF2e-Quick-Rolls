@@ -1,5 +1,22 @@
 // src/module/checks.ts
 var SAVE_AND_PERCEPTION_CHECKS = ["fortitude", "reflex", "will", "perception"];
+var SAVE_LABELS = {
+  fortitude: "PF2E.SavesFortitude",
+  reflex: "PF2E.SavesReflex",
+  will: "PF2E.SavesWill",
+  perception: "PF2E.PerceptionLabel"
+};
+function prepareCheckButtons(skills, localize) {
+  const checks = SAVE_AND_PERCEPTION_CHECKS.map((slug) => ({
+    slug,
+    label: localize(SAVE_LABELS[slug])
+  }));
+  const skillButtons = Object.entries(skills).map(([slug, data]) => ({
+    slug,
+    label: localize(typeof data === "string" ? data : data.label)
+  })).sort((a, b) => a.label.localeCompare(b.label));
+  return { checks, skills: skillButtons };
+}
 function getAvailableChecks() {
   return /* @__PURE__ */ new Set([...SAVE_AND_PERCEPTION_CHECKS, ...Object.keys(CONFIG?.PF2E?.skills ?? {})]);
 }
@@ -478,17 +495,10 @@ var QuickRollPrompt2 = class extends BaseApplication {
     if (extraTypes.length) {
       groups.push({ label: "Additional", types: extraTypes.map((type) => ({ type, label: this.localize(labels[type] ?? type), title: this.localize(labels[type] ?? type), icon: DAMAGE_TYPE_ICONS[type] ?? null })) });
     }
-    const saveLabels = {
-      fortitude: "PF2E.SavesFortitude",
-      reflex: "PF2E.SavesReflex",
-      will: "PF2E.SavesWill",
-      perception: "PF2E.PerceptionLabel"
-    };
-    const checks = SAVE_AND_PERCEPTION_CHECKS.map((check) => ({
-      check,
-      label: this.localize(saveLabels[check])
-    }));
-    const skills = Object.entries(CONFIG?.PF2E?.skills ?? {}).map(([check, data]) => ({ check, label: this.localize(typeof data === "string" ? data : data.label) })).sort((a, b) => a.label.localeCompare(b.label, game?.i18n ? void 0 : "en"));
+    const { checks, skills } = prepareCheckButtons(
+      CONFIG?.PF2E?.skills ?? {},
+      (label) => this.localize(label)
+    );
     return { groups, checks, skills };
   }
   _onRender(_context, _options) {
