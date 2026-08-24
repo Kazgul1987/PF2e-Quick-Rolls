@@ -26,10 +26,14 @@ function buildCheckInline(type, options = {}) {
     parameters.push(`dc:${options.dc}`);
   return `@Check[${parameters.join("|")}]`;
 }
-async function postCheck(check) {
+async function postCheck(check, options = {}) {
   const slug = check.trim().toLowerCase();
   if (!/^[a-z][a-z0-9-]*$/.test(slug) || !getAvailableChecks().has(slug)) {
     ui?.notifications?.warn?.("PF2e Quick Rolls: Unbekannter Check.");
+    return false;
+  }
+  if (options.dc !== void 0 && (!Number.isSafeInteger(options.dc) || options.dc < 0)) {
+    ui?.notifications?.warn?.("PF2e Quick Rolls: Ung\xFCltiger fixer DC.");
     return false;
   }
   if (typeof ChatMessage === "undefined" || typeof ChatMessage.create !== "function") {
@@ -37,13 +41,73 @@ async function postCheck(check) {
     return false;
   }
   try {
-    await ChatMessage.create({ content: buildCheckInline(slug) });
+    await ChatMessage.create({ content: buildCheckInline(slug, options) });
     return true;
   } catch (error) {
     console.error("PF2e Quick Rolls | Posting check failed:", error);
     ui?.notifications?.warn?.("PF2e Quick Rolls: Check konnte nicht im Chat ver\xF6ffentlicht werden.");
     return false;
   }
+}
+
+// src/module/check-dc.ts
+var DC_BY_LEVEL = /* @__PURE__ */ new Map([
+  [-1, 13],
+  [0, 14],
+  [1, 15],
+  [2, 16],
+  [3, 18],
+  [4, 19],
+  [5, 20],
+  [6, 22],
+  [7, 23],
+  [8, 24],
+  [9, 26],
+  [10, 27],
+  [11, 28],
+  [12, 30],
+  [13, 31],
+  [14, 32],
+  [15, 34],
+  [16, 35],
+  [17, 36],
+  [18, 38],
+  [19, 39],
+  [20, 40],
+  [21, 42],
+  [22, 44],
+  [23, 46],
+  [24, 48],
+  [25, 50]
+]);
+function parseCheckDCInput(rawInput) {
+  const input = rawInput.trim();
+  if (!input)
+    return { mode: "none" };
+  if (/^-?\d+$/.test(input)) {
+    const level = Number(input);
+    return Number.isSafeInteger(level) ? { mode: "level", level } : { mode: "invalid" };
+  }
+  const fixedMatch = input.match(/^dc(?:\s+|:\s*)(\d+)$/i);
+  if (fixedMatch) {
+    const dc = Number(fixedMatch[1]);
+    return Number.isSafeInteger(dc) ? { mode: "fixed", dc } : { mode: "invalid" };
+  }
+  return { mode: "invalid" };
+}
+function getDCByLevel(level) {
+  return Number.isSafeInteger(level) ? DC_BY_LEVEL.get(level) : void 0;
+}
+function resolveCheckDC(input) {
+  if (input.mode === "none")
+    return { valid: true };
+  if (input.mode === "invalid")
+    return { valid: false, reason: "input" };
+  if (input.mode === "fixed") {
+    return Number.isSafeInteger(input.dc) && input.dc >= 0 ? { valid: true, dc: input.dc } : { valid: false, reason: "fixed" };
+  }
+  const dc = getDCByLevel(input.level);
+  return dc === void 0 ? { valid: false, reason: "level" } : { valid: true, dc };
 }
 
 // src/module/damage.ts
@@ -205,34 +269,6 @@ var ACTION_ALIASES = {
   "recall-knowledge": "recallKnowledge",
   recall: "recallKnowledge"
 };
-var STANDARD_DC_BY_LEVEL = [
-  14,
-  15,
-  16,
-  18,
-  19,
-  20,
-  22,
-  23,
-  24,
-  26,
-  27,
-  28,
-  30,
-  31,
-  32,
-  34,
-  35,
-  36,
-  38,
-  39,
-  40,
-  42,
-  44,
-  46,
-  48,
-  50
-];
 var FALLBACK_CONDITION_SLUGS = [
   "blinded",
   "broken",
@@ -395,14 +431,19 @@ async function parseCheckCommand(input) {
     return false;
   }
   let dc;
-  if (qualifier === "dc") {
-    dc = value;
-  } else {
-    if (value < 0 || value >= STANDARD_DC_BY_LEVEL.length) {
+  if (qualifier === "level") {
+    dc = getDCByLevel(value);
+    if (dc === void 0) {
       notifyUser("PF2e Quick Rolls: Standard-DCs sind nur f\xFCr Stufen 0\u201325 verf\xFCgbar.");
       return false;
     }
-    dc = STANDARD_DC_BY_LEVEL[value];
+  } else {
+    const resolved = resolveCheckDC(parseCheckDCInput(`DC ${value}`));
+    if (!resolved.valid || resolved.dc === void 0) {
+      notifyUser("PF2e Quick Rolls: Ung\xFCltige DC-Eingabe.");
+      return false;
+    }
+    dc = resolved.dc;
   }
   if (!ChatMessage?.create) {
     console.warn("PF2e Quick Rolls | ChatMessage.create ist nicht verf\xFCgbar.");
@@ -521,7 +562,15 @@ var QuickRollPrompt2 = class extends BaseApplication {
     });
     root.querySelectorAll("[data-check]").forEach((button) => {
       button.addEventListener("click", async () => {
-        if (await postCheck(button.dataset.check ?? ""))
+        const resolved = resolveCheckDC(parseCheckDCInput(input.value));
+        if (!resolved.valid) {
+          const message = resolved.reason === "level" ? "PF2e Quick Rolls: Ung\xFCltiges Level f\xFCr DC-by-Level (g\xFCltig: -1 bis 25)." : "PF2e Quick Rolls: Ung\xFCltige DC-Eingabe.";
+          ui?.notifications?.warn?.(message);
+          input.focus();
+          return;
+        }
+        const posted = resolved.dc === void 0 ? await postCheck(button.dataset.check ?? "") : await postCheck(button.dataset.check ?? "", { dc: resolved.dc });
+        if (posted)
           await this.close();
       });
     });

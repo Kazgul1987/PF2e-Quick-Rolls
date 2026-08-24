@@ -39,8 +39,8 @@ describe("damage rolls", () => {
   });
 
   it("executes the normalized PF2e chat formula", async () => {
-    expect(await rollDamage("8", "fire")).toBe(true);
-    expect(globalThis.ui.chat.processMessage).toHaveBeenCalledWith("/r (8)[fire]", {});
+    expect(await rollDamage("23", "fire")).toBe(true);
+    expect(globalThis.ui.chat.processMessage).toHaveBeenCalledWith("/r (23)[fire]", {});
   });
 
   it("reports unavailable rolling when the PF2e chat API is absent", async () => {

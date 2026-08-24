@@ -42,6 +42,21 @@ describe("PF2e inline checks", () => {
     expect(buildCheckInline("perception", { dc: 19 })).toBe("@Check[type:perception|dc:19]");
   });
 
+  it.each([
+    ["reflex", 23],
+    ["athletics", 31],
+  ])("posts %s with a fixed DC", async (slug, dc) => {
+    expect(await postCheck(slug, { dc })).toBe(true);
+    expect(globalThis.ChatMessage.create).toHaveBeenCalledWith({
+      content: `@Check[type:${slug}|dc:${dc}]`,
+    });
+  });
+
+  it("rejects an invalid fixed DC", async () => {
+    expect(await postCheck("reflex", { dc: -5 })).toBe(false);
+    expect(globalThis.ChatMessage.create).not.toHaveBeenCalled();
+  });
+
   it.each(["fortitude", "reflex", "will", "perception"])("posts the %s check", async (slug) => {
     expect(await postCheck(slug)).toBe(true);
     expect(globalThis.ChatMessage.create).toHaveBeenCalledWith({ content: `@Check[type:${slug}]` });

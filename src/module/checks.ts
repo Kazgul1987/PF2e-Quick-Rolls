@@ -48,10 +48,15 @@ export function buildCheckInline(type: string, options: { dc?: number } = {}): s
 }
 
 /** Post a PF2e inline check without resolving an actor or initiating a roll. */
-export async function postCheck(check: string): Promise<boolean> {
+export async function postCheck(check: string, options: { dc?: number } = {}): Promise<boolean> {
   const slug = check.trim().toLowerCase();
   if (!/^[a-z][a-z0-9-]*$/.test(slug) || !getAvailableChecks().has(slug)) {
     ui?.notifications?.warn?.("PF2e Quick Rolls: Unbekannter Check.");
+    return false;
+  }
+
+  if (options.dc !== undefined && (!Number.isSafeInteger(options.dc) || options.dc < 0)) {
+    ui?.notifications?.warn?.("PF2e Quick Rolls: Ungültiger fixer DC.");
     return false;
   }
 
@@ -61,7 +66,7 @@ export async function postCheck(check: string): Promise<boolean> {
   }
 
   try {
-    await ChatMessage.create({ content: buildCheckInline(slug) });
+    await ChatMessage.create({ content: buildCheckInline(slug, options) });
     return true;
   } catch (error) {
     console.error("PF2e Quick Rolls | Posting check failed:", error);

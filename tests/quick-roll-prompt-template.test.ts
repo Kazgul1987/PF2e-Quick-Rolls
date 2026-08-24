@@ -8,4 +8,11 @@ describe("quick-roll prompt template", () => {
     expect(template.match(/data-check="{{slug}}"/g)).toHaveLength(2);
     expect(template).not.toContain('data-check="{{check}}"');
   });
+
+  it("keeps the command line available to both check and damage workflows", () => {
+    const source = readFileSync("src/module/app/QuickRollPrompt.ts", "utf8");
+
+    expect(source).toContain("resolveCheckDC(parseCheckDCInput(input.value))");
+    expect(source).toContain("await rollDamage(value, this.selectedDamageType)");
+  });
 });
