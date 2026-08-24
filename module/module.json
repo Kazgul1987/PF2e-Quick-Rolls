@@ -6,8 +6,8 @@
   "version": "1.0.0",
   "type": "module",
   "compatibility": {
-    "minimum": "13",
-    "verified": "13"
+    "minimum": "14",
+    "verified": "14"
   },
   "authors": [
     {
@@ -32,5 +32,5 @@
     "styles/quick-rolls.css"
   ],
   "manifest": "https://raw.githubusercontent.com/Kazgul1987/PF2e-Quick-Rolls/main/module/module.json",
-  "download": "https://github.com/Kazgul1987/PF2e-Quick-Rolls/releases/latest/download/module.zip"
+  "download": "https://github.com/Kazgul1987/PF2e-Quick-Rolls/releases/latest/download/pf2e-quick-rolls.zip"
 }

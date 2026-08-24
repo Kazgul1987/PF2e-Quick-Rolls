@@ -1,37 +1,83 @@
-// src/module/parser.ts
-var DAMAGE_TYPE_ALIASES = {
-  acid: "acid",
+// src/module/damage.ts
+var STANDARD_DAMAGE_TYPES = [
+  "bludgeoning",
+  "piercing",
+  "slashing",
+  "bleed",
+  "acid",
+  "cold",
+  "electricity",
+  "fire",
+  "force",
+  "sonic",
+  "mental",
+  "poison",
+  "spirit",
+  "vitality",
+  "void"
+];
+var LEGACY_ALIASES = {
+  positive: "vitality",
+  negative: "void"
+};
+var SHORT_ALIASES = {
   aci: "acid",
-  cold: "cold",
-  col: "cold",
-  electricity: "electricity",
-  ele: "electricity",
-  elec: "electricity",
-  fire: "fire",
-  fir: "fire",
-  force: "force",
-  sonic: "sonic",
-  son: "sonic",
-  poison: "poison",
-  poi: "poison",
-  mental: "mental",
-  men: "mental",
-  negative: "negative",
-  neg: "negative",
-  positive: "positive",
-  pos: "positive",
-  vitality: "vitality",
-  vit: "vitality",
-  void: "void",
-  voi: "void",
-  bludgeoning: "bludgeoning",
   blu: "bludgeoning",
   blud: "bludgeoning",
-  piercing: "piercing",
+  col: "cold",
+  ele: "electricity",
+  elec: "electricity",
+  fir: "fire",
+  men: "mental",
   pie: "piercing",
-  slashing: "slashing",
-  sla: "slashing"
+  poi: "poison",
+  sla: "slashing",
+  son: "sonic",
+  vit: "vitality",
+  voi: "void",
+  pos: "vitality",
+  neg: "void"
 };
+function getAvailableDamageTypes() {
+  const configured = Object.keys(CONFIG?.PF2E?.damageTypes ?? {});
+  return new Set(configured.length > 0 ? configured : STANDARD_DAMAGE_TYPES);
+}
+function resolveDamageType(value) {
+  const token = value.trim().toLowerCase();
+  const normalized = LEGACY_ALIASES[token] ?? SHORT_ALIASES[token] ?? token;
+  return getAvailableDamageTypes().has(normalized) ? normalized : null;
+}
+function buildDamageFormula(formula, damageType) {
+  const normalizedFormula = formula.replace(/\s+/g, "");
+  const resolvedType = resolveDamageType(damageType);
+  if (!normalizedFormula || !resolvedType || !/^[0-9dD+\-*/()]+$/.test(normalizedFormula))
+    return null;
+  return `(${normalizedFormula})[${resolvedType}]`;
+}
+async function rollDamage(formula, damageType) {
+  const damageFormula = buildDamageFormula(formula, damageType);
+  if (!damageFormula) {
+    ui?.notifications?.warn?.("PF2e Quick Rolls: Ung\xFCltige Schadensformel oder Schadensart.");
+    return false;
+  }
+  const command = `/r ${damageFormula}`;
+  try {
+    if (ui?.chat?.processMessage) {
+      await ui.chat.processMessage(command, {});
+      return true;
+    }
+    if (game?.dice?.roll) {
+      await game.dice.roll(command);
+      return true;
+    }
+  } catch (error) {
+    console.error("PF2e Quick Rolls | Damage roll failed:", error);
+  }
+  ui?.notifications?.warn?.("PF2e Quick Rolls: W\xFCrfelmechanik nicht verf\xFCgbar.");
+  return false;
+}
+
+// src/module/parser.ts
 var SKILL_AND_SAVE_ALIASES = {
   acrobatics: "acrobatics",
   acro: "acrobatics",
@@ -205,7 +251,7 @@ async function parseConditionCommand(input) {
     return false;
   }
   const value = valueToken ? Number.parseInt(valueToken, 10) : void 0;
-  if (valueToken && (Number.isNaN(value) || value <= 0)) {
+  if (value !== void 0 && (Number.isNaN(value) || value <= 0)) {
     notifyUser("PF2e Quick Rolls: Condition-Wert muss eine positive Zahl sein.");
     return false;
   }
@@ -239,7 +285,7 @@ async function parseDamageCommand(input) {
   }
   const formula = match[1].replace(/\s+/g, "");
   const damageAlias = match[2].toLowerCase();
-  const damageType = DAMAGE_TYPE_ALIASES[damageAlias];
+  const damageType = resolveDamageType(damageAlias);
   if (!damageType) {
     notifyUser(`PF2e Quick Rolls: Unbekannte Schadensart '${damageAlias}'.`);
     return false;
@@ -248,22 +294,7 @@ async function parseDamageCommand(input) {
     notifyUser("PF2e Quick Rolls: Keine Schadensformel gefunden.");
     return false;
   }
-  const command = `/r (${formula})[${damageType}]`;
-  if (!game?.dice?.roll) {
-    try {
-      if (ui?.chat?.processMessage) {
-        await ui.chat.processMessage(command, {});
-        return true;
-      }
-    } catch (error) {
-      console.error("PF2e Quick Rolls | Chat-Verarbeitung fehlgeschlagen:", error);
-    }
-    console.warn("PF2e Quick Rolls | game.dice.roll ist nicht verf\xFCgbar.");
-    notifyUser("PF2e Quick Rolls: W\xFCrfelmechanik nicht verf\xFCgbar.");
-    return false;
-  }
-  await game.dice.roll(command);
-  return true;
+  return rollDamage(formula, damageType);
 }
 async function parseCheckCommand(input) {
   const trimmed = input.trim();
@@ -331,8 +362,9 @@ async function invokeActionMacro(slug) {
     await legacyEntry();
     return true;
   }
-  if (legacyEntry && typeof legacyEntry.use === "function") {
-    await legacyEntry.use();
+  const legacyUse = legacyEntry && legacyEntry.use;
+  if (typeof legacyUse === "function") {
+    await legacyUse();
     return true;
   }
   notifyUser(`PF2e Quick Rolls: Aktion '${slug}' nicht verf\xFCgbar.`);
@@ -370,73 +402,85 @@ function normalizeConditionToken(value) {
 }
 
 // src/module/app/QuickRollPrompt.ts
-var QuickRollPrompt2 = class extends Application {
-  static get defaultOptions() {
-    const options = super.defaultOptions ?? {};
-    const classes = /* @__PURE__ */ new Set(["pf2e-quick-rolls", "quick-roll-prompt"]);
-    for (const cssClass of options.classes ?? []) {
-      classes.add(cssClass);
-    }
-    return {
-      ...options,
-      id: "pf2e-quick-rolls-quick-roll-prompt",
-      classes: Array.from(classes),
-      template: "modules/pf2e-quick-rolls/templates/quick-roll-prompt.hbs",
-      width: options.width ?? 360,
-      height: options.height ?? 120,
-      title: options.title ?? "PF2e Quick Roll"
-    };
+var BaseApplication = foundry.applications.api.HandlebarsApplicationMixin(
+  foundry.applications.api.ApplicationV2
+);
+var GROUPS = {
+  Physical: ["bludgeoning", "piercing", "slashing", "bleed"],
+  Energy: ["acid", "cold", "electricity", "fire", "force", "sonic"],
+  Other: ["mental", "poison", "spirit", "vitality", "void"]
+};
+var QuickRollPrompt2 = class extends BaseApplication {
+  constructor() {
+    super(...arguments);
+    this.selectedDamageType = null;
   }
-  activateListeners(html) {
-    super.activateListeners(html);
-    const root = this.extractRootElement(html);
-    const input = root?.querySelector('input[name="quick-roll-input"]');
-    if (!input) {
-      console.warn("PF2e Quick Rolls | QuickRollPrompt rendered without an input element.");
-      return;
+  async _prepareContext() {
+    const available = getAvailableDamageTypes();
+    const labels = CONFIG?.PF2E?.damageTypes ?? {};
+    const groups = Object.entries(GROUPS).map(([label, types]) => ({
+      label,
+      types: types.filter((type) => available.has(type)).map((type) => ({
+        type,
+        label: ["bludgeoning", "piercing", "slashing"].includes(type) ? type[0].toUpperCase() : this.localize(labels[type] ?? type),
+        title: this.localize(labels[type] ?? type)
+      }))
+    }));
+    const grouped = new Set(STANDARD_DAMAGE_TYPES);
+    const extraTypes = [...available].filter((type) => !grouped.has(type));
+    if (extraTypes.length) {
+      groups.push({ label: "Additional", types: extraTypes.map((type) => ({ type, label: this.localize(labels[type] ?? type), title: this.localize(labels[type] ?? type) })) });
     }
+    return { groups };
+  }
+  _onRender(_context, _options) {
+    const root = document.getElementById("pf2e-quick-rolls-quick-roll-prompt");
+    const input = root?.querySelector("[name=quick-roll-input]");
+    if (!root || !input)
+      return;
     input.focus();
     input.addEventListener("keydown", (event) => void this.handleKeydown(event, input));
-  }
-  extractRootElement(html) {
-    if (!html) {
-      return null;
-    }
-    if (html instanceof HTMLElement) {
-      return html;
-    }
-    if (typeof html === "object" && 0 in html) {
-      const candidate = html[0];
-      if (candidate instanceof HTMLElement) {
-        return candidate;
-      }
-    }
-    return null;
+    root.querySelectorAll("[data-damage-type]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this.selectedDamageType = this.selectedDamageType === button.dataset.damageType ? null : button.dataset.damageType ?? null;
+        root.querySelectorAll("[data-damage-type]").forEach((element) => {
+          const selected = element.getAttribute("data-damage-type") === this.selectedDamageType;
+          element.classList.toggle("is-selected", selected);
+          element.setAttribute("aria-pressed", String(selected));
+        });
+        input.focus();
+      });
+    });
   }
   async handleKeydown(event, input) {
     if (event.key === "Escape") {
       event.preventDefault();
       await this.close();
-      return;
-    }
-    if (event.key !== "Enter") {
-      return;
-    }
-    event.preventDefault();
-    const rawValue = input.value.trim();
-    if (!rawValue) {
-      await this.close();
-      return;
-    }
-    try {
-      const wasProcessed = await parseQuickRollInput(rawValue);
-      if (wasProcessed !== false) {
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const value = input.value.trim();
+      if (!value)
+        return;
+      const processed = this.selectedDamageType ? await rollDamage(value, this.selectedDamageType) : await parseQuickRollInput(value);
+      if (processed)
         await this.close();
-      }
-    } catch (error) {
-      console.error("PF2e Quick Rolls | Failed to process quick roll input:", error);
     }
   }
+  localize(label) {
+    const localized = game?.i18n?.localize?.(label);
+    if (localized && localized !== label)
+      return localized;
+    return label.replace(/(^|-)(\w)/g, (_match, separator, letter) => `${separator}${letter.toUpperCase()}`);
+  }
+};
+QuickRollPrompt2.DEFAULT_OPTIONS = {
+  id: "pf2e-quick-rolls-quick-roll-prompt",
+  classes: ["pf2e-quick-rolls", "quick-roll-prompt"],
+  window: { title: "PF2e Quick Rolls" },
+  position: { width: 420, height: "auto" }
+};
+QuickRollPrompt2.PARTS = {
+  prompt: { template: "modules/pf2e-quick-rolls/templates/quick-roll-prompt.hbs" }
 };
 
 // src/module/keybindings.ts
@@ -445,7 +489,7 @@ function openQuickRollPrompt() {
     console.debug(
       "PF2e Quick Rolls | openQuickRollPrompt invoked; instantiating QuickRollPrompt"
     );
-    new QuickRollPrompt().render(true);
+    void new QuickRollPrompt().render({ force: true });
     return;
   }
   console.debug(

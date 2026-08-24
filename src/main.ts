@@ -4,12 +4,12 @@
  * This file is bundled into {@link module/scripts/main.js} via tsup.
  */
 
-import { QuickRollPrompt } from "./module/app/QuickRollPrompt";
+import { QuickRollPrompt as QuickRollPromptApplication } from "./module/app/QuickRollPrompt";
 import { registerKeybindings } from "./module/keybindings";
 
 declare global {
   // eslint-disable-next-line no-var
-  var QuickRollPrompt: typeof QuickRollPrompt | undefined;
+  var QuickRollPrompt: typeof QuickRollPromptApplication | undefined;
 }
 
 declare const Hooks: {
@@ -26,7 +26,7 @@ interface Game {
 
 Hooks.once("init", () => {
   console.log("PF2e Quick Rolls | Module initializing");
-  globalThis.QuickRollPrompt = QuickRollPrompt;
+  globalThis.QuickRollPrompt = QuickRollPromptApplication;
   console.debug("PF2e Quick Rolls | Starting keybinding registration from main.ts");
   registerKeybindings();
   console.debug("PF2e Quick Rolls | Finished keybinding registration from main.ts");

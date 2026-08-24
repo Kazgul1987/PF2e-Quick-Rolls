@@ -28,7 +28,7 @@ type KeybindingsGame = {
 };
 
 type QuickRollPromptInstance = {
-  render(force?: boolean): void;
+  render(options?: { force?: boolean }): Promise<unknown>;
 };
 
 type QuickRollPromptConstructor = new () => QuickRollPromptInstance;
@@ -38,7 +38,7 @@ function openQuickRollPrompt(): void {
     console.debug(
       "PF2e Quick Rolls | openQuickRollPrompt invoked; instantiating QuickRollPrompt"
     );
-    new QuickRollPrompt().render(true);
+    void new QuickRollPrompt().render({ force: true });
     return;
   }
 

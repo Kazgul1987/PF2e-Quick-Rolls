@@ -52,6 +52,7 @@ declare global {
     | {
         PF2E?: {
           conditionTypes?: Record<string, unknown>;
+          damageTypes?: Record<string, string>;
         };
       }
     | undefined;
@@ -93,6 +94,10 @@ describe("parseQuickRollInput", () => {
 
     globalThis.CONFIG = {
       PF2E: {
+        damageTypes: Object.fromEntries([
+          "acid", "bleed", "bludgeoning", "cold", "electricity", "fire", "force",
+          "mental", "piercing", "poison", "slashing", "sonic", "spirit", "vitality", "void",
+        ].map((type) => [type, type])),
         conditionTypes: {
           clumsy: {},
           prone: {},
@@ -145,7 +150,7 @@ describe("parseQuickRollInput", () => {
     const result = await parseQuickRollInput("3d6+4 fir");
 
     expect(result).toBe(true);
-    expect(globalThis.game?.dice?.roll).toHaveBeenCalledWith("/r (3d6+4)[fire]");
+    expect(globalThis.ui?.chat?.processMessage).toHaveBeenCalledWith("/r (3d6+4)[fire]", {});
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
   });
 
@@ -153,7 +158,7 @@ describe("parseQuickRollInput", () => {
     const result = await parseQuickRollInput("2d6 vit");
 
     expect(result).toBe(true);
-    expect(globalThis.game?.dice?.roll).toHaveBeenCalledWith("/r (2d6)[vitality]");
+    expect(globalThis.ui?.chat?.processMessage).toHaveBeenCalledWith("/r (2d6)[vitality]", {});
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
   });
 
@@ -161,7 +166,7 @@ describe("parseQuickRollInput", () => {
     const result = await parseQuickRollInput("1d8 void");
 
     expect(result).toBe(true);
-    expect(globalThis.game?.dice?.roll).toHaveBeenCalledWith("/r (1d8)[void]");
+    expect(globalThis.ui?.chat?.processMessage).toHaveBeenCalledWith("/r (1d8)[void]", {});
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
   });
 
@@ -169,7 +174,7 @@ describe("parseQuickRollInput", () => {
     const result = await parseQuickRollInput("3d6+4 acid");
 
     expect(result).toBe(true);
-    expect(globalThis.game?.dice?.roll).toHaveBeenCalledWith("/r (3d6+4)[acid]");
+    expect(globalThis.ui?.chat?.processMessage).toHaveBeenCalledWith("/r (3d6+4)[acid]", {});
     expect(globalThis.ui?.notifications?.warn).not.toHaveBeenCalled();
   });
 
@@ -217,7 +222,7 @@ describe("parseQuickRollInput", () => {
     const result = await parseQuickRollInput("2d6+4 xyz");
 
     expect(result).toBe(false);
-    expect(globalThis.game?.dice?.roll).not.toHaveBeenCalled();
+    expect(globalThis.ui?.chat?.processMessage).not.toHaveBeenCalled();
     expect(globalThis.ui?.notifications?.warn).toHaveBeenCalledWith(
       "PF2e Quick Rolls: Unbekannte Schadensart 'xyz'.",
     );

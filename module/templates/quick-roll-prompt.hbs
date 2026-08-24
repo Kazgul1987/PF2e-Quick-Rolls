@@ -1,4 +1,16 @@
 <form class="quick-roll-prompt__form" autocomplete="off">
+  <div class="quick-roll-prompt__damage-types" aria-label="Damage type">
+    {{#each groups}}
+      <fieldset class="quick-roll-prompt__group">
+        <legend>{{label}}</legend>
+        <div class="quick-roll-prompt__buttons">
+          {{#each types}}
+            <button type="button" data-damage-type="{{type}}" title="{{title}}" aria-pressed="false">{{label}}</button>
+          {{/each}}
+        </div>
+      </fieldset>
+    {{/each}}
+  </div>
   <label class="quick-roll-prompt__label" for="quick-roll-input">
     Enter a quick roll command
   </label>
@@ -7,7 +19,7 @@
     name="quick-roll-input"
     class="quick-roll-prompt__input"
     type="text"
-    placeholder="1d20+10"
+    placeholder="2d6+4"
     autofocus
   />
 </form>
