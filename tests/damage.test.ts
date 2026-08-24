@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildDamageFormula, rollDamage } from "../src/module/damage";
+import { buildDamageFormula, DAMAGE_TYPE_ICONS, rollDamage } from "../src/module/damage";
 
 describe("damage rolls", () => {
+  it.each([
+    ["fire", "fire"], ["cold", "snowflake"], ["spirit", "ghost"],
+    ["vitality", "sun"], ["void", "skull"],
+  ])("maps %s to PF2e's %s icon", (type, icon) => {
+    expect(DAMAGE_TYPE_ICONS[type]).toBe(icon);
+  });
   beforeEach(() => {
     vi.restoreAllMocks();
     globalThis.CONFIG = { PF2E: { damageTypes: Object.fromEntries([

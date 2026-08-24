@@ -1,15 +1,34 @@
 <form class="quick-roll-prompt__form" autocomplete="off">
-  <div class="quick-roll-prompt__damage-types" aria-label="Damage type">
+  <div class="quick-roll-prompt__content">
+  <section class="quick-roll-prompt__column" aria-labelledby="quick-roll-damage-heading">
+    <h2 id="quick-roll-damage-heading">Damage</h2>
+    <div class="quick-roll-prompt__damage-types" aria-label="Damage type">
     {{#each groups}}
       <fieldset class="quick-roll-prompt__group">
         <legend>{{label}}</legend>
         <div class="quick-roll-prompt__buttons">
           {{#each types}}
-            <button type="button" data-damage-type="{{type}}" title="{{title}}" aria-pressed="false">{{label}}</button>
+            <button type="button" data-damage-type="{{type}}" title="{{title}}" aria-label="{{title}}" aria-pressed="false">
+              {{#if icon}}<i class="fa-solid fa-{{icon}}" aria-hidden="true"></i>{{/if}}<span>{{label}}</span>
+            </button>
           {{/each}}
         </div>
       </fieldset>
     {{/each}}
+    </div>
+  </section>
+  <section class="quick-roll-prompt__column" aria-labelledby="quick-roll-checks-heading">
+    <h2 id="quick-roll-checks-heading">Saves / Perception</h2>
+    <div class="quick-roll-prompt__action-buttons">
+      {{#each checks}}<button type="button" data-check="{{check}}" title="{{label}}" aria-label="{{label}}">{{label}}</button>{{/each}}
+    </div>
+  </section>
+  <section class="quick-roll-prompt__column quick-roll-prompt__skills" aria-labelledby="quick-roll-skills-heading">
+    <h2 id="quick-roll-skills-heading">Skills</h2>
+    <div class="quick-roll-prompt__action-buttons">
+      {{#each skills}}<button type="button" data-check="{{check}}" title="{{label}}" aria-label="{{label}}">{{label}}</button>{{/each}}
+    </div>
+  </section>
   </div>
   <label class="quick-roll-prompt__label" for="quick-roll-input">
     Enter a quick roll command

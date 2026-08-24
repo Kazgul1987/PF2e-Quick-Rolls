@@ -8,17 +8,43 @@
   gap: 0.5rem;
 }
 
+.quick-roll-prompt__content {
+  display: grid;
+  grid-template-columns: minmax(250px, 1.2fr) minmax(145px, 0.7fr) minmax(175px, 0.85fr);
+  gap: 0.75rem;
+}
+.quick-roll-prompt__column { min-width: 0; }
+.quick-roll-prompt__column h2 { font-size: 1rem; margin: 0 0 0.4rem; border-bottom: 1px solid var(--color-border-light-2, #999); }
+
 .quick-roll-prompt__damage-types { display: grid; gap: 0.55rem; }
 .quick-roll-prompt__group { border: 0; margin: 0; padding: 0; }
 .quick-roll-prompt__group legend { font-weight: 600; margin-bottom: 0.25rem; }
 .quick-roll-prompt__buttons { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-.quick-roll-prompt__buttons button { width: auto; min-width: 2.25rem; padding: 0.25rem 0.5rem; }
+.quick-roll-prompt__buttons button { --damage-color: #3c3c3c; width: auto; min-width: 2.25rem; padding: 0.25rem 0.5rem; border-color: var(--damage-color); }
+.quick-roll-prompt__buttons button i { color: var(--damage-color); width: 1.1em; }
+.quick-roll-prompt__buttons button[data-damage-type="acid"] { --damage-color: #007300; }
+.quick-roll-prompt__buttons button[data-damage-type="bleed"] { --damage-color: #99001a; }
+.quick-roll-prompt__buttons button[data-damage-type="cold"] { --damage-color: #2f2fa6; }
+.quick-roll-prompt__buttons button[data-damage-type="electricity"] { --damage-color: darkgoldenrod; }
+.quick-roll-prompt__buttons button[data-damage-type="fire"] { --damage-color: #a62f00; }
+.quick-roll-prompt__buttons button[data-damage-type="force"] { --damage-color: #6300aa; }
+.quick-roll-prompt__buttons button[data-damage-type="mental"] { --damage-color: midnightblue; }
+.quick-roll-prompt__buttons button[data-damage-type="poison"] { --damage-color: #5b7332; }
+.quick-roll-prompt__buttons button[data-damage-type="sonic"] { --damage-color: darkcyan; }
+.quick-roll-prompt__buttons button[data-damage-type="spirit"] { --damage-color: #5a5585; }
+.quick-roll-prompt__buttons button[data-damage-type="vitality"] { --damage-color: #b5a800; }
+.quick-roll-prompt__buttons button[data-damage-type="void"] { --damage-color: #00001f; }
 .quick-roll-prompt__buttons button.is-selected {
   background: var(--color-warm-2, #9f6b28);
   border-color: var(--color-warm-1, #f3c267);
   color: var(--color-light-1, #fff);
-  box-shadow: 0 0 0 1px var(--color-warm-1, #f3c267);
+  box-shadow: 0 0 0 2px var(--color-warm-1, #f3c267), inset 0 0 0 1px #fff;
 }
+.quick-roll-prompt__buttons button.is-selected i { color: currentcolor; }
+
+.quick-roll-prompt__action-buttons { display: grid; gap: 0.3rem; }
+.quick-roll-prompt__action-buttons button { margin: 0; text-align: left; padding: 0.25rem 0.5rem; }
+.quick-roll-prompt__skills .quick-roll-prompt__action-buttons { max-height: 25rem; overflow-y: auto; padding-right: 0.2rem; }
 
 .quick-roll-prompt__label {
   font-weight: 600;
@@ -28,4 +54,9 @@
   width: 100%;
   padding: 0.5rem;
   font-size: 1rem;
+}
+
+@media (max-width: 650px) {
+  .quick-roll-prompt__content { grid-template-columns: 1fr 1fr; }
+  .quick-roll-prompt__column:first-child { grid-column: 1 / -1; }
 }
